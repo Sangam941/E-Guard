@@ -1,22 +1,28 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Users, UserPlus, Phone, Trash2, ShieldCheck, ShieldAlert } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 
 export default function ContactsPage() {
-  const { contacts, addContact, removeContact, isSOSActive } = useStore();
+  const { contacts, addContact, removeContact, isSOSActive, fetchContacts } = useStore();
   const [isAdding, setIsAdding] = useState(false);
   const [newContact, setNewContact] = useState({ name: '', phone: '', relation: '' });
 
-  const handleAdd = (e: React.FormEvent) => {
+  // Fetch contacts on mount
+  useEffect(() => {
+    fetchContacts();
+  }, [fetchContacts]);
+
+  const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newContact.name || !newContact.phone) return;
     
-    addContact({
-      id: Date.now().toString(),
-      ...newContact,
+    await addContact({
+      name: newContact.name,
+      phone: newContact.phone,
+      relation: newContact.relation,
     });
     setNewContact({ name: '', phone: '', relation: '' });
     setIsAdding(false);
@@ -136,7 +142,7 @@ export default function ContactsPage() {
                 <Phone className="w-4 h-4" />
               </a>
               <button
-                onClick={() => removeContact(contact.id)}
+                onClick={() => contact.id && removeContact(contact.id)}
                 className="p-2 text-[#9ca3af] hover:text-red-500 hover:bg-red-500/10 rounded-full transition-colors"
                 title="Remove Contact"
               >

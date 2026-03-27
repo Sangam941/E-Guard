@@ -29,11 +29,10 @@ export default function EvidencePage() {
     }
 
     // Add to store
-    addEvidence({
-      type,
-      url: `simulated-${type}-${Date.now()}.mp4`,
-      timestamp: new Date()
-    });
+    await addEvidence(
+      new Blob(['simulated content'], { type: `video/mp4` }),
+      type
+    );
 
     setStatus('success');
     setTimeout(() => setStatus('idle'), 3000);

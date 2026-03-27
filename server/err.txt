@@ -1,0 +1,6 @@
+Cannot find module 'google-generative-ai'
+Require stack:
+- C:\Users\Acer\Desktop\E-Guard\server\controllers\sosController.js
+- C:\Users\Acer\Desktop\E-Guard\server\routes\sos.js
+- C:\Users\Acer\Desktop\E-Guard\server\server.js
+- C:\Users\Acer\Desktop\E-Guard\server\[eval]

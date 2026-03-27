@@ -1,6 +1,6 @@
-const Alert = require('../models/Alert');
+import Alert from '../models/Alert.js';
 
-exports.getAlerts = async (req, res, next) => {
+export const getAlerts = async (req, res, next) => {
   try {
     const { userId } = req.params;
     const alerts = await Alert.find({ userId }).sort({ timestamp: -1 }).populate('sosId');
@@ -14,7 +14,7 @@ exports.getAlerts = async (req, res, next) => {
   }
 };
 
-exports.getAlertById = async (req, res, next) => {
+export const getAlertById = async (req, res, next) => {
   try {
     const { id } = req.params;
     const alert = await Alert.findById(id).populate('sosId');
@@ -35,7 +35,7 @@ exports.getAlertById = async (req, res, next) => {
   }
 };
 
-exports.markAsRead = async (req, res, next) => {
+export const markAsRead = async (req, res, next) => {
   try {
     const { id } = req.params;
     const alert = await Alert.findByIdAndUpdate(id, { isRead: true }, { new: true });
@@ -57,7 +57,7 @@ exports.markAsRead = async (req, res, next) => {
   }
 };
 
-exports.markAllAsRead = async (req, res, next) => {
+export const markAllAsRead = async (req, res, next) => {
   try {
     const { userId } = req.params;
     await Alert.updateMany({ userId, isRead: false }, { isRead: true });
