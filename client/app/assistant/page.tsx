@@ -1,135 +1,185 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { motion } from 'motion/react';
-import { Send, Shield, Bot, User, Loader2 } from 'lucide-react';
-import { GoogleGenAI } from '@google/genai';
-import ReactMarkdown from 'react-markdown';
+import React, { useState, useRef, useEffect } from 'react';
+import { Send, MapPin, Phone, Mic, AlertCircle } from 'lucide-react';
+import { apiService } from '@/services/api';
 
 interface Message {
   id: string;
-  role: 'user' | 'model';
-  content: string;
+  sender: 'user' | 'ai';
+  text: string;
+  timestamp: Date;
 }
 
-export default function AssistantPage() {
+export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      role: 'model',
-      content: 'Hello. I am your AI Safety Assistant. If you feel unsafe, tell me your situation and I will provide immediate, actionable guidance. How can I help you right now?',
+      sender: 'ai',
+      text: "I'm walking home through the park. It's darker than usual and I feel a bit uneasy.",
+      timestamp: new Date(),
     },
   ]);
   const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [location, setLocation] = useState({ lat: 40.7128, lng: -74.0060, address: '24th Gas Station' });
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
   useEffect(() => {
-    scrollToBottom();
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
+  const handleSendMessage = async () => {
+    if (!input.trim()) return;
 
-    const userMessage: Message = { id: Date.now().toString(), role: 'user', content: input.trim() };
-    setMessages((prev) => [...prev, userMessage]);
+    const newMessage: Message = {
+      id: Date.now().toString(),
+      sender: 'user',
+      text: input,
+      timestamp: new Date(),
+    };
+
+    setMessages((prev) => [...prev, newMessage]);
     setInput('');
-    setIsLoading(true);
+    setLoading(true);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY });
-      const chat = ai.chats.create({
-        model: 'gemini-3-flash-preview',
-        config: {
-          systemInstruction: 'You are a calm, concise, and highly effective emergency safety assistant. Provide short, actionable steps to keep the user safe. Do not use long paragraphs. Prioritize immediate physical safety. If the situation is life-threatening, advise them to trigger the SOS button or call emergency services immediately.',
-        },
-      });
-
-      // Combine history into a single prompt for context
-      const context = messages.map(m => `${m.role}: ${m.content}`).join('\n');
-      const prompt = `Previous conversation:\n${context}\n\nUser: ${userMessage.content}`;
-
-      const response = await chat.sendMessage({ message: prompt });
-      
-      setMessages((prev) => [
-        ...prev,
-        { id: Date.now().toString(), role: 'model', content: response.text || 'I am unable to process that right now. Please trigger SOS if you are in danger.' },
-      ]);
+      const response = await apiService.chat.send(input);
+      const aiMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        sender: 'ai',
+        text: response.reply || "I've increased monitoring sensitivity. GPS tracking is at max precision.",
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, aiMessage]);
     } catch (error) {
-      console.error('Error calling Gemini:', error instanceof Error ? error.message : String(error));
-      setMessages((prev) => [
-        ...prev,
-        { id: Date.now().toString(), role: 'model', content: 'Connection error. Please trigger the SOS button if you need immediate help.' },
-      ]);
+      console.error('Error sending message:', error);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div className="flex flex-col h-full py-4 gap-4">
-      <div className="flex items-center gap-3 bg-[#1e2130] p-4 rounded-2xl border border-[#2d3748]">
-        <div className="bg-[#8b5cf6]/20 p-2 rounded-full">
-          <Bot className="w-6 h-6 text-[#8b5cf6]" />
+    <div className="min-h-screen bg-gray-950 text-white p-4 flex flex-col">
+      <div className="max-w-2xl mx-auto w-full flex flex-col h-screen">
+        {/* Header */}
+        <div className="flex items-start justify-between mb-6 pt-4">
+          <div>
+            <h1 className="text-2xl font-bold">Sentinel AI</h1>
+            <p className="text-green-400 text-xs font-semibold">ANALYZING ENVIRONMENT</p>
+          </div>
+          <button className="p-2 hover:bg-gray-800 rounded transition">
+            <span>🔍</span>
+          </button>
         </div>
-        <div>
-          <h1 className="font-bold text-white">Safety Assistant</h1>
-          <p className="text-xs text-[#9ca3af]">AI-powered emergency guidance</p>
-        </div>
-      </div>
 
-      <div className="flex-1 overflow-y-auto bg-[#1e2130] rounded-2xl border border-[#2d3748] p-4 flex flex-col gap-4">
-        {messages.map((msg) => (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            key={msg.id}
-            className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
-          >
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${msg.role === 'user' ? 'bg-[#3b82f6]' : 'bg-[#8b5cf6]'}`}>
-              {msg.role === 'user' ? <User className="w-4 h-4 text-white" /> : <Shield className="w-4 h-4 text-white" />}
-            </div>
-            <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm ${msg.role === 'user' ? 'bg-[#3b82f6] text-white rounded-tr-none' : 'bg-[#2d3748] text-white rounded-tl-none'}`}>
-              <div className="markdown-body prose prose-invert max-w-none text-sm">
-                <ReactMarkdown>{msg.content}</ReactMarkdown>
+        {/* Status */}
+        <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 mb-6 text-xs text-gray-400">
+          SECURITY SESSION INITIALIZED
+        </div>
+
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto mb-6 space-y-4 pr-2">
+          {messages.map((msg) => (
+            <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <div
+                className={`max-w-xs md:max-w-md p-4 rounded-lg ${
+                  msg.sender === 'user'
+                    ? 'bg-gray-800 border border-gray-700'
+                    : 'bg-gray-900 border border-green-400/30'
+                }`}
+              >
+                {msg.sender === 'ai' && (
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                    <span className="text-xs text-green-400 font-semibold">SENTINEL</span>
+                  </div>
+                )}
+                <p className="text-sm text-gray-300 leading-relaxed">{msg.text}</p>
+                <p className="text-xs text-gray-600 mt-2">{msg.timestamp.toLocaleTimeString()}</p>
               </div>
             </div>
-          </motion.div>
-        ))}
-        {isLoading && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-3">
-            <div className="w-8 h-8 rounded-full bg-[#8b5cf6] flex items-center justify-center shrink-0">
-              <Shield className="w-4 h-4 text-white" />
+          ))}
+          {loading && (
+            <div className="flex justify-start">
+              <div className="bg-gray-900 border border-gray-800 p-4 rounded-lg">
+                <div className="flex gap-2">
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                </div>
+              </div>
             </div>
-            <div className="bg-[#2d3748] rounded-2xl rounded-tl-none px-4 py-3 flex items-center gap-2">
-              <Loader2 className="w-4 h-4 text-[#9ca3af] animate-spin" />
-              <span className="text-xs text-[#9ca3af]">Analyzing situation...</span>
-            </div>
-          </motion.div>
-        )}
-        <div ref={messagesEndRef} />
-      </div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
 
-      <div className="flex gap-2">
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-          placeholder="Describe your situation..."
-          className="flex-1 bg-[#1e2130] border border-[#2d3748] rounded-full px-5 py-3 text-sm text-white placeholder:text-[#9ca3af] focus:outline-none focus:border-[#8b5cf6] transition-colors"
-        />
-        <button
-          onClick={handleSend}
-          disabled={isLoading || !input.trim()}
-          className="w-12 h-12 rounded-full bg-[#8b5cf6] flex items-center justify-center text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#7c3aed] transition-colors shrink-0"
-        >
-          <Send className="w-5 h-5 ml-0.5" />
-        </button>
+        {/* Location Map Preview */}
+        <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 mb-6">
+          <div className="h-48 bg-gray-800 rounded flex items-center justify-center mb-3">
+            <div className="text-center">
+              <MapPin size={24} className="text-green-400 mx-auto mb-2" />
+              <p className="text-sm text-gray-400">{location.address}</p>
+              <p className="text-xs text-gray-500 mt-1">
+                {location.lat.toFixed(4)}°, {location.lng.toFixed(4)}°
+              </p>
+            </div>
+          </div>
+          <div className="text-center p-3 bg-gray-800 rounded text-xs text-gray-400">
+            24h Gas Station • 250m ahead • Brightly lit
+          </div>
+        </div>
+
+        {/* Tactical Actions */}
+        <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 mb-6">
+          <h3 className="text-green-400 font-semibold mb-3 flex items-center gap-2">
+            TACTICAL ACTIONS
+          </h3>
+          <div className="grid grid-cols-3 gap-2">
+            <button className="flex flex-col items-center gap-2 p-3 bg-gray-800 hover:bg-gray-700 rounded transition">
+              <span className="text-lg">📍</span>
+              <span className="text-xs text-gray-400">Live Tracking</span>
+            </button>
+            <button className="flex flex-col items-center gap-2 p-3 bg-gray-800 hover:bg-gray-700 rounded transition">
+              <span className="text-lg">📞</span>
+              <span className="text-xs text-gray-400">Fake Call</span>
+            </button>
+            <button className="flex flex-col items-center gap-2 p-3 bg-gray-800 hover:bg-gray-700 rounded transition">
+              <span className="text-lg">🎙️</span>
+              <span className="text-xs text-gray-400">Record Audio</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Emergency SOS */}
+        <div className="bg-red-900/30 border border-red-600/50 rounded-lg p-4 mb-6">
+          <h3 className="text-red-400 font-semibold mb-3 flex items-center gap-2">
+            ⚠️ EMERGENCY SOS
+          </h3>
+          <p className="text-sm text-gray-300 mb-3">Hold for 3 seconds to alert local authorities and contacts</p>
+          <button className="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded transition">
+            *️⃣ EMERGENCY SOS
+          </button>
+        </div>
+
+        {/* Message Input */}
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+            placeholder="Type a message or use voice..."
+            className="flex-1 bg-gray-900 border border-gray-800 rounded-lg px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-green-400 transition"
+          />
+          <button
+            onClick={handleSendMessage}
+            disabled={loading || !input.trim()}
+            className="bg-green-500 hover:bg-green-400 disabled:bg-gray-600 text-black font-bold px-4 py-3 rounded-lg transition"
+          >
+            <Send size={20} />
+          </button>
+        </div>
       </div>
     </div>
   );
