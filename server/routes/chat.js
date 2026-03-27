@@ -8,3 +8,4 @@ router.get('/:chatId', chatController.getChatHistory);
 router.get('/user/:userId', chatController.getUserChats);
 
 export default router;
+ 
