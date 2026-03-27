@@ -4,14 +4,26 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Shield } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/store/useStore';
+import { useSOSTracking } from '@/hooks/useSOSTracking';
 
 export default function SOSPage() {
   const router = useRouter();
-  const { activateSOS } = useStore();
+  const { activateSOS, user } = useStore();
   const [sosTriggered, setSOSTriggered] = useState(false);
   const [progress, setProgress] = useState(0);
   const holdTimerRef = useRef<NodeJS.Timeout | null>(null);
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Get token from localStorage
+  const [token, setToken] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('authToken');
+    }
+    return null;
+  });
+
+  // Initialize real-time tracking
+  const { startTracking } = useSOSTracking(token);
 
   const handleMouseDown = () => {
     setProgress(0);
@@ -43,9 +55,11 @@ export default function SOSPage() {
   useEffect(() => {
     if (sosTriggered) {
       activateSOS();
+      // Start real-time tracking with contacts
+      startTracking([], user?.name || 'User', 'Emergency Alert');
       router.push('/sos/details');
     }
-  }, [sosTriggered, activateSOS, router]);
+  }, [sosTriggered, activateSOS, router, startTracking, user?.name]);
 
   return (
     <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center p-8">

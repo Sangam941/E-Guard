@@ -4,14 +4,27 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { MapPin } from 'lucide-react';
 import { useStore } from '@/store/useStore';
+import { useSOSTracking } from '@/hooks/useSOSTracking';
+import LiveMap from '@/components/LiveMap';
 import dynamic from 'next/dynamic';
 
 const MapView = dynamic(() => import('@/components/MapView'), { ssr: false });
 
 export default function SOSDetailsPage() {
   const router = useRouter();
-  const { isSOSActive, deactivateSOS } = useStore();
-  const [location, setLocation] = useState({ lat: 40.7128, lng: -74.0060 });
+  const { isSOSActive, deactivateSOS, user } = useStore();
+  const [location, setLocation] = useState({ lat: 40.7128, lng: -74.0060, accuracy: 10 });
+  
+  // Get token from localStorage
+  const [token, setToken] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('authToken');
+    }
+    return null;
+  });
+
+  // Initialize real-time tracking
+  const { startTracking, stopTracking, state: sosState, socket } = useSOSTracking(token);
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -19,19 +32,31 @@ export default function SOSDetailsPage() {
         setLocation({
           lat: position.coords.latitude,
           lng: position.coords.longitude,
+          accuracy: position.coords.accuracy
         });
       });
     }
   }, []);
 
+  // Start real-time tracking when SOS is active
+  useEffect(() => {
+    if (isSOSActive && token && socket && !sosState.isTracking) {
+      startTracking([], user?.name || 'User', 'Emergency Alert');
+    }
+  }, [isSOSActive, token, socket, sosState.isTracking, startTracking, user?.name]);
+
   // Redirect if no active SOS
   useEffect(() => {
     if (!isSOSActive) {
+      if (sosState.isTracking) {
+        stopTracking('SOS Deactivated');
+      }
       router.push('/sos');
     }
-  }, [isSOSActive, router]);
+  }, [isSOSActive, router, sosState.isTracking, stopTracking]);
 
   const handleCancel = async () => {
+    stopTracking('User cancelled');
     await deactivateSOS();
     router.push('/sos');
   };
@@ -65,24 +90,13 @@ export default function SOSDetailsPage() {
           <div className="grid grid-cols-3 gap-8">
             {/* Left: Map */}
             <div className="col-span-2">
-              <div className="bg-gray-900 border border-gray-800 rounded-lg p-8">
-                <div className="relative h-96 bg-gray-900 rounded overflow-hidden mb-6">
-                  {location.lat && location.lng ? (
-                    <MapView lat={location.lat} lng={location.lng} />
-                  ) : null}
-
-                  {/* Distance Marker Overlay */}
-                  <div className="absolute top-12 left-1/3 bg-yellow-500 text-black px-4 py-2 rounded text-xs font-bold z-[1000] shadow-lg">
-                    UNI-4A
-                  </div>
-                </div>
-
-                {/* Coordinates */}
-                <div className="p-4 bg-gray-800 rounded border border-gray-700">
-                  <p className="text-xs text-gray-400 mb-2">GPS COORDINATES</p>
-                  <p className="text-base font-mono text-green-400 font-bold">{location.lat.toFixed(4)}° N, {Math.abs(location.lng).toFixed(4)}° W</p>
-                </div>
-              </div>
+              <LiveMap
+                socket={socket}
+                sosSessionId={sosState.sosSessionId}
+                isTracking={sosState.isTracking}
+                currentLocation={sosState.currentLocation}
+                showPath={true}
+              />
             </div>
 
             {/* Right: Contacts & Status */}

@@ -23,7 +23,7 @@ export default function FakeCallPage() {
 
   useEffect(() => {
     fetchFreeCall()
-  }, [])
+  }, [fetchFreeCall])
   
 
   useEffect(() => {
