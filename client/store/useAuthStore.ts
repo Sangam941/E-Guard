@@ -1,87 +1,101 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import * as authApi from '../api/auth';
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import { loginUser } from "@/api/auth";
+import toast from "react-hot-toast";
 
-interface User {
-  _id: string;
-  name: string;
-  email: string;
+export interface AuthUser {
+    email: string;
+    name: string;
+    token: string;
 }
 
-interface AuthState {
-  user: User | null;
-  token: string | null;
-  isLoading: boolean;
-  error: string | null;
-  
-  login: (credentials: { email: string; password?: string }) => Promise<void>;
-  register: (data: { name: string; email: string; password?: string }) => Promise<void>;
-  logout: () => void;
-  checkAuth: () => Promise<void>;
+
+export interface AuthStoreState {
+    user: AuthUser | null;
+    isAuthenticated: boolean;
+    token: string | null;
+    loading: boolean;
+    login: (email: string, password: string) => Promise<void>;
+    logout: () => void;
+    checkAuth: () => boolean;
 }
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set, get) => ({
-      user: null,
-      token: null,
-      isLoading: false,
-      error: null,
+export const useAuthStore = create<AuthStoreState>()(
+    persist(
+        (set) => ({
+            user: null,
+            isAuthenticated: false,
+            token: null,
+            loading: false,
 
-      login: async (credentials) => {
-        try {
-          set({ isLoading: true, error: null });
-          const res = await authApi.loginUser(credentials);
-          set({
-            user: { _id: res.data._id, name: res.data.name, email: res.data.email },
-            token: res.data.token,
-            isLoading: false,
-          });
-        } catch (error: any) {
-          set({ error: error.message || 'Login failed', isLoading: false });
-          throw error;
+            login: async (email: string, password: string) => {
+                set({ loading: true });
+                try {
+                    const data = await loginUser(email, password);
+                    const authUser = {
+                        ...data.user,
+                    };
+
+                    set({
+                        isAuthenticated: true,
+                        user: authUser,
+                        token: data.token,
+                    });
+
+                    localStorage.setItem("authUser", JSON.stringify({
+                        ...authUser,
+                        token: data.token,
+                    }));
+                    toast.success("Login successful!");
+                } catch (error) {
+                    toast.error("Invalid email or password");
+                    set({
+                        isAuthenticated: false,
+                        user: null,
+                        token: null,
+                    });
+                    throw new Error("Invalid credentials");
+                } finally {
+                    set({ loading: false });
+                }
+            },
+
+            logout: () => {
+                set({ isAuthenticated: false, user: null, token: null });
+                localStorage.removeItem("authUser");
+                toast.success("Logged out successfully!");
+            },
+
+            checkAuth: () => {
+                const stored = localStorage.getItem("authUser");
+                if (stored) {
+                    try {
+                        const userObj = JSON.parse(stored);
+                        set({
+                            user: userObj,
+                            isAuthenticated: true,
+                            token: userObj.token ?? null,
+                        });
+                        return true;
+                    } catch {
+                        set({
+                            user: null,
+                            isAuthenticated: false,
+                            token: null,
+                        });
+                        return false;
+                    }
+                }
+                set({
+                    user: null,
+                    isAuthenticated: false,
+                    token: null,
+                });
+                return false;
+            },
+        }),
+        {
+            name: "auth-storage",
         }
-      },
-
-      register: async (data) => {
-        try {
-          set({ isLoading: true, error: null });
-          const res = await authApi.registerUser(data);
-          set({
-            user: { _id: res.data._id, name: res.data.name, email: res.data.email },
-            token: res.data.token,
-            isLoading: false,
-          });
-        } catch (error: any) {
-          set({ error: error.message || 'Registration failed', isLoading: false });
-          throw error;
-        }
-      },
-
-      logout: () => {
-        set({ user: null, token: null });
-      },
-
-      checkAuth: async () => {
-        const { token } = get();
-        if (!token) return;
-
-        try {
-          set({ isLoading: true, error: null });
-          const res = await authApi.getMe();
-          set({
-            user: { _id: res.data._id, name: res.data.name, email: res.data.email },
-            isLoading: false,
-          });
-        } catch (error: any) {
-          // Token might be invalid or expired
-          set({ user: null, token: null, error: 'Session expired', isLoading: false });
-        }
-      },
-    }),
-    {
-      name: 'auth-storage', // Used by apiClient interceptor
-      partialize: (state) => ({ token: state.token, user: state.user }), // Persist only token and user
-    }
-  )
+    )
 );

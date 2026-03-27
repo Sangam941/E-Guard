@@ -3,10 +3,18 @@ import FakeCall from '../models/FakeCall.js';
 
 // POST /api/fake-call
 export const createFakeCall = asyncHandler(async (req, res) => {
-  const { callerName, callerNumber, delaySeconds, scheduleTime, duration } = req.body;
+  const { callerName, callerNumber } = req.body;
   const userId = req.user._id;
-  if (!userId || !callerName || !callerNumber) {
-    res.status(400).json({ success: false, message: 'userId, callerName, and callerNumber are required' });
+  if (!userId) {
+    res.status(400).json({ success: false, message: 'userId is required' });
+    return;
+  }
+  if (!callerName) {
+    res.status(400).json({ success: false, message: 'callerName, are required' });
+    return;
+  }
+  if (callerNumber) {
+    res.status(400).json({ success: false, message: 'callerNumber are required' });
     return;
   }
   const fakeCall = await FakeCall.create({

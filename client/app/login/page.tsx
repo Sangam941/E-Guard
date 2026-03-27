@@ -4,15 +4,16 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, Shield, AlertCircle } from 'lucide-react';
-import { useStore } from '@/store/useStore';
+import { useAuthStore } from '@/store/useAuthStore';
 
 export default function LoginPage() {
+
+  const { login, loading } = useAuthStore()
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
-  const { login, isLoading } = useStore();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,10 +103,10 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={loading}
               className="w-full bg-green-600 hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
             >
-              {isLoading ? (
+              {loading ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   Signing in...
