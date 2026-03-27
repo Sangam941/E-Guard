@@ -5,4 +5,4 @@ const router = Router();
 
 router.post('/', ChatController.sendMessage);
 
-export default router;
+export default router; 
