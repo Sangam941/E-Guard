@@ -1,123 +1,288 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { motion } from 'motion/react';
-import { ShieldAlert, MapPin, Phone, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
-import { useStore } from '@/store/useStore';
-import { useRouter } from 'next/navigation';
+import React, { useEffect, useState, useRef } from 'react';
+import { MapPin, Shield } from 'lucide-react';
 
 export default function SOSPage() {
-  const { isSOSActive, deactivateSOS, contacts, location, setLocation } = useStore();
-  const router = useRouter();
-  const [statusSteps, setStatusSteps] = useState([
-    { id: 'location', label: 'Fetching Location...', status: 'loading' },
-    { id: 'backend', label: 'Sending Alert to Server...', status: 'pending' },
-    { id: 'contacts', label: 'Notifying Contacts...', status: 'pending' },
-  ]);
+  const [location, setLocation] = useState({ lat: 40.7128, lng: -74.0060 });
+  const [isSending, setIsSending] = useState(false);
+  const [alertSent, setAlertSent] = useState(false);
+  const [sosTriggered, setSOSTriggered] = useState(false);
+  const alertSentRef = useRef(false);
+  const [progress, setProgress] = useState(0);
+  const holdTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    if (!isSOSActive) {
-      router.push('/');
-      return;
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition((position) => {
+        setLocation({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
+      });
     }
+  }, []);
 
-    const simulateProcess = async () => {
-      // 1. Fetch Location
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      navigator.geolocation.getCurrentPosition(
-        (pos) => setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        () => setLocation({ lat: 40.7128, lng: -74.0060 }) // Fallback to NYC
-      );
-      setStatusSteps(prev => prev.map(s => s.id === 'location' ? { ...s, label: 'Location Acquired', status: 'success' } : s));
-      setStatusSteps(prev => prev.map(s => s.id === 'backend' ? { ...s, status: 'loading' } : s));
+  const handleMouseDown = () => {
+    setProgress(0);
+    
+    progressIntervalRef.current = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 100) {
+          if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+          if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
+          setSOSTriggered(true);
+          return 100;
+        }
+        return prev + 5;
+      });
+    }, 50);
 
-      // 2. Send to Backend
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      setStatusSteps(prev => prev.map(s => s.id === 'backend' ? { ...s, label: 'Alert Sent Successfully', status: 'success' } : s));
-      setStatusSteps(prev => prev.map(s => s.id === 'contacts' ? { ...s, status: 'loading' } : s));
-
-      // 3. Notify Contacts
-      await new Promise(resolve => setTimeout(resolve, 2500));
-      setStatusSteps(prev => prev.map(s => s.id === 'contacts' ? { ...s, label: `Alert sent to ${contacts.length} contacts`, status: 'success' } : s));
-    };
-
-    simulateProcess();
-  }, [isSOSActive, router, setLocation, contacts.length]);
-
-  const handleCancel = () => {
-    deactivateSOS();
-    router.push('/');
+    holdTimerRef.current = setTimeout(() => {
+      setSOSTriggered(true);
+    }, 1000);
   };
 
-  if (!isSOSActive) return null;
+  const handleMouseUp = () => {
+    if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
+    if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+    setProgress(0);
+  };
 
-  return (
-    <div className="flex flex-col h-full py-6 gap-6">
-      {/* Header */}
-      <div className="flex flex-col items-center text-center gap-4">
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className="w-24 h-24 bg-red-600 rounded-full flex items-center justify-center shadow-2xl shadow-red-600/50"
-        >
-          <ShieldAlert className="w-12 h-12 text-white" />
-        </motion.div>
-        <div>
-          <h1 className="text-2xl font-bold text-white uppercase tracking-wider">SOS Active</h1>
-          <p className="text-red-400 text-sm mt-1">Emergency protocols initiated</p>
+  // Send alert when SOS is triggered
+  useEffect(() => {
+    if (sosTriggered && !alertSentRef.current) {
+      alertSentRef.current = true;
+      
+      // Wrap state updates in a microtask to avoid cascading renders
+      queueMicrotask(() => {
+        setIsSending(true);
+        
+        // Simulate sending alert - replace with actual API call
+        setTimeout(() => {
+          setAlertSent(true);
+          setIsSending(false);
+        }, 1000);
+      });
+    }
+  }, [sosTriggered]);
+
+  // Step 1: Hold to Trigger Screen
+  if (!sosTriggered) {
+    return (
+      <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center p-8">
+        <div className="text-center">
+          <div className="mb-12">
+            {/* Large Red SOS Button */}
+            <button
+              onMouseDown={handleMouseDown}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseUp}
+              onTouchStart={handleMouseDown}
+              onTouchEnd={handleMouseUp}
+              className="relative w-64 h-64 mx-auto mb-8 rounded-full bg-red-600 hover:bg-red-500 transition shadow-2xl shadow-red-600/50 flex flex-col items-center justify-center group"
+            >
+              {/* Pulsing Background Ring */}
+              <div className="absolute inset-0 rounded-full border-4 border-red-400 opacity-50 animate-pulse"></div>
+
+              {/* Progress Ring SVG */}
+              <svg className="absolute inset-0 w-full h-full -rotate-90" style={{ filter: 'drop-shadow(0 0 10px rgba(220, 38, 38, 0.3))' }}>
+                <circle
+                  cx="128"
+                  cy="128"
+                  r="120"
+                  fill="none"
+                  stroke="rgba(255,255,255,0.2)"
+                  strokeWidth="6"
+                />
+                <circle
+                  cx="128"
+                  cy="128"
+                  r="120"
+                  fill="none"
+                  stroke="white"
+                  strokeWidth="6"
+                  strokeDasharray={`${(progress / 100) * 754} 754`}
+                  strokeLinecap="round"
+                  className="transition-all duration-75"
+                />
+              </svg>
+
+              {/* Button Content */}
+              <div className="relative z-10 flex flex-col items-center">
+                <Shield size={72} className="text-white mb-4" />
+                <span className="text-5xl font-bold tracking-widest text-white">SOS</span>
+                <span className="text-lg text-white/90 mt-4 font-medium">Hold 1s to trigger</span>
+              </div>
+            </button>
+          </div>
+
+          <p className="text-gray-400 text-2xl mb-4">
+            Your location will be shared with emergency contacts
+          </p>
+          <p className="text-gray-500 text-lg">
+            {progress > 0 ? `${Math.round(progress)}% - Hold to complete` : 'Press and hold the button'}
+          </p>
         </div>
       </div>
+    );
+  }
 
-      {/* Status List */}
-      <div className="bg-[#1e2130] rounded-2xl p-5 border border-[#2d3748] flex flex-col gap-4">
-        {statusSteps.map((step, index) => (
-          <div key={step.id} className="flex items-center gap-4">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center bg-[#0f111a] border border-[#2d3748]">
-              {step.status === 'loading' && <Loader2 className="w-4 h-4 text-[#3b82f6] animate-spin" />}
-              {step.status === 'success' && <CheckCircle2 className="w-4 h-4 text-green-500" />}
-              {step.status === 'pending' && <div className="w-2 h-2 rounded-full bg-[#4b5563]" />}
+  // Step 2 & 3: Alert Sent Screen
+  return (
+    <div className="min-h-screen bg-gray-950 text-white">
+      <div className="p-12">
+        <div className="max-w-7xl mx-auto">
+          {/* Header */}
+          <div className="flex items-start justify-between mb-12">
+            <div>
+              <p className="text-green-400 text-xs font-bold tracking-widest mb-4">● CRITICAL EVENT LIVE</p>
+              <h1 className="text-7xl font-bold mb-2">ALERT</h1>
+              <h2 className="text-6xl font-bold text-white">SENT</h2>
             </div>
-            <span className={`text-sm font-medium ${step.status === 'success' ? 'text-white' : step.status === 'loading' ? 'text-[#3b82f6]' : 'text-[#9ca3af]'}`}>
-              {step.label}
-            </span>
-          </div>
-        ))}
-      </div>
-
-      {/* Map Preview (Simulated) */}
-      <div className="flex-1 bg-[#1e2130] rounded-2xl border border-[#2d3748] overflow-hidden relative min-h-[200px]">
-        {location ? (
-          <div className="absolute inset-0 flex items-center justify-center bg-[#0f111a]">
-            {/* Simulated Map Background */}
-            <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(#2d3748 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              className="relative z-10 flex flex-col items-center"
-            >
-              <div className="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center animate-pulse">
-                <MapPin className="w-6 h-6 text-red-500" />
+            <div className="space-y-4 text-right text-sm">
+              <div className="flex items-center justify-end gap-3">
+                <div className="w-3 h-3 bg-green-400 rounded-full"></div>
+                <span className="text-gray-400">UPLINK</span>
+                <span className="text-green-400 font-semibold">SECURE / ACTIVE</span>
               </div>
-              <div className="mt-2 bg-[#1e2130] px-3 py-1 rounded-full text-xs font-mono border border-[#2d3748]">
-                {location.lat.toFixed(4)}, {location.lng.toFixed(4)}
+              <div className="flex items-center justify-end gap-3">
+                <span className="text-yellow-400 text-lg">🎯</span>
+                <span className="text-gray-400">DISPATCH</span>
+                <span className="text-yellow-400 font-semibold">RESPONDER ASSIGNED</span>
               </div>
-            </motion.div>
+            </div>
           </div>
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <Loader2 className="w-6 h-6 text-[#9ca3af] animate-spin" />
-          </div>
-        )}
-      </div>
 
-      {/* Cancel Button */}
-      <button
-        onClick={handleCancel}
-        className="w-full py-4 rounded-xl font-bold text-white bg-[#2d3748] hover:bg-[#4b5563] transition-colors flex items-center justify-center gap-2"
-      >
-        <XCircle className="w-5 h-5" />
-        CANCEL SOS
-      </button>
+          {/* Main Content Grid */}
+          <div className="grid grid-cols-3 gap-8">
+            {/* Left: Map */}
+            <div className="col-span-2">
+              <div className="bg-gray-900 border border-gray-800 rounded-lg p-8">
+                <div className="relative h-96 bg-gradient-to-b from-gray-800 to-gray-900 rounded overflow-hidden mb-6">
+                  {/* Map Grid Background */}
+                  <div className="absolute inset-0 opacity-5" style={{
+                    backgroundImage: 'radial-gradient(circle at 40% 40%, #22c55e 1px, transparent 1px)',
+                    backgroundSize: '30px 30px'
+                  }}></div>
+
+                  {/* Map SVG Lines */}
+                  <svg className="absolute inset-0 w-full h-full opacity-20">
+                    <line x1="0" y1="0" x2="100%" y2="100%" stroke="#666" strokeWidth="1" />
+                    <line x1="100%" y1="0" x2="0" y2="100%" stroke="#666" strokeWidth="1" />
+                    <circle cx="50%" cy="50%" r="80" fill="none" stroke="#666" strokeWidth="1" opacity="0.3" />
+                    <circle cx="50%" cy="50%" r="120" fill="none" stroke="#666" strokeWidth="1" opacity="0.2" />
+                  </svg>
+
+                  {/* Location Marker */}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="relative">
+                      <div className="w-12 h-12 bg-green-500/20 rounded-full flex items-center justify-center border-2 border-green-400">
+                        <MapPin size={24} className="text-green-400" />
+                      </div>
+                      <div className="absolute inset-0 border-2 border-green-400/30 rounded-full animate-pulse"></div>
+                    </div>
+                  </div>
+
+                  {/* Distance Marker */}
+                  <div className="absolute top-12 left-1/3 bg-yellow-500 text-black px-4 py-2 rounded text-xs font-bold">
+                    UNI-4A
+                  </div>
+
+                  {/* Zoom Controls */}
+                  <div className="absolute right-6 bottom-6 flex flex-col gap-2">
+                    <button className="w-12 h-12 bg-gray-800 hover:bg-gray-700 rounded flex items-center justify-center text-2xl font-bold">+</button>
+                    <button className="w-12 h-12 bg-gray-800 hover:bg-gray-700 rounded flex items-center justify-center text-2xl font-bold">−</button>
+                  </div>
+                </div>
+
+                {/* Coordinates */}
+                <div className="p-4 bg-gray-800 rounded border border-gray-700">
+                  <p className="text-xs text-gray-400 mb-2">GPS COORDINATES</p>
+                  <p className="text-base font-mono text-green-400 font-bold">{location.lat.toFixed(4)}° N, {Math.abs(location.lng).toFixed(4)}° W</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Right: Contacts & Status */}
+            <div className="col-span-1 space-y-6">
+              {/* Notified Contacts */}
+              <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
+                <h3 className="text-sm font-bold tracking-widest mb-6">
+                  NOTIFIED CONTACTS <span className="text-green-400">3 ACTIVE</span>
+                </h3>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 pb-4 border-b border-gray-800">
+                    <div className="w-10 h-10 bg-gray-800 rounded flex items-center justify-center text-lg">👤</div>
+                    <div className="flex-1">
+                      <p className="text-xs font-bold">MARCUS V.</p>
+                      <p className="text-xs text-gray-500">EMERGENCY CONTACT</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-green-400 font-bold">RECEIVED</p>
+                      <p className="text-xs text-gray-500">12:14</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 pb-4 border-b border-gray-800">
+                    <div className="w-10 h-10 bg-gray-800 rounded flex items-center justify-center text-lg">👤</div>
+                    <div className="flex-1">
+                      <p className="text-xs font-bold">ELENA B.</p>
+                      <p className="text-xs text-gray-500">EMERGENCY CONTACT</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-blue-400 font-bold">DELIVERING</p>
+                      <p className="text-xs text-gray-500">12:15</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gray-800 rounded flex items-center justify-center text-lg">🎯</div>
+                    <div className="flex-1">
+                      <p className="text-xs font-bold">LOCAL AUTHORITIES</p>
+                      <p className="text-xs text-gray-500">911 DISPATCH</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-yellow-400 font-bold">DISPATCHED</p>
+                      <p className="text-xs text-gray-500">12:14</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Mic Feed */}
+              <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
+                <h3 className="text-sm font-bold tracking-widest mb-6">MIC FEED - LIVE</h3>
+                <div className="flex items-center justify-center gap-1 h-16">
+                  <div className="w-1.5 h-6 bg-green-400 rounded-full animate-pulse"></div>
+                  <div className="w-1.5 h-4 bg-green-400 rounded-full animate-pulse" style={{animationDelay: '0.1s'}}></div>
+                  <div className="w-1.5 h-8 bg-green-400 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
+                  <div className="w-1.5 h-5 bg-green-400 rounded-full animate-pulse" style={{animationDelay: '0.3s'}}></div>
+                  <div className="w-1.5 h-7 bg-green-400 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
+                </div>
+                <p className="text-xs text-gray-500 text-center mt-4 font-mono">RECORDING IN PROGRESS</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Info & Buttons */}
+          <div className="mt-12 space-y-8">
+            <p className="text-xs text-gray-500 leading-relaxed max-w-3xl">
+              OBSIDIAN AEGIS PROTOCOL. All data, including audio and GPS tracking, is being encrypted and mirrored to three secure nodes. Local law enforcement has been provided with a temporary access token valid for 120 minutes.
+            </p>
+
+            <div className="flex gap-6">
+              <button className="flex-1 bg-gray-800 hover:bg-gray-700 text-white py-4 rounded-lg transition font-semibold tracking-widest text-sm">
+                SHARE STATUS LINK
+              </button>
+              <button className="flex-1 bg-red-600 hover:bg-red-500 text-white py-4 rounded-lg transition font-semibold tracking-widest text-sm">
+                FALSE ALARM / CANCEL
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

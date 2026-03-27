@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { motion } from 'motion/react';
-import { Send, Shield, Bot, User, Loader2 } from 'lucide-react';
+import { Send, Shield, Bot, User, Loader2, MapPin } from 'lucide-react';
 import { GoogleGenAI } from '@google/genai';
 import ReactMarkdown from 'react-markdown';
 
@@ -17,11 +16,12 @@ export default function AssistantPage() {
     {
       id: '1',
       role: 'model',
-      content: 'Hello. I am your AI Safety Assistant. If you feel unsafe, tell me your situation and I will provide immediate, actionable guidance. How can I help you right now?',
+      content: 'Hello. I am Sentinel AI, your AI Safety Assistant. If you feel unsafe, tell me your situation and I will provide immediate, actionable guidance. How can I help you right now?',
     },
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [location] = useState({ lat: 40.7128, lng: -74.0060 });
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -49,7 +49,6 @@ export default function AssistantPage() {
         },
       });
 
-      // Combine history into a single prompt for context
       const context = messages.map(m => `${m.role}: ${m.content}`).join('\n');
       const prompt = `Previous conversation:\n${context}\n\nUser: ${userMessage.content}`;
 
@@ -71,65 +70,147 @@ export default function AssistantPage() {
   };
 
   return (
-    <div className="flex flex-col h-full py-4 gap-4">
-      <div className="flex items-center gap-3 bg-[#1e2130] p-4 rounded-2xl border border-[#2d3748]">
-        <div className="bg-[#8b5cf6]/20 p-2 rounded-full">
-          <Bot className="w-6 h-6 text-[#8b5cf6]" />
+    <div className="min-h-screen bg-gray-950 text-white p-12">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-12">
+          <p className="text-green-400 text-xs font-bold tracking-widest mb-4">● SENTINEL AI ENGAGED</p>
+          <h1 className="text-7xl font-bold mb-2">Safety</h1>
+          <h2 className="text-6xl font-bold text-white mb-6">Guidance</h2>
         </div>
-        <div>
-          <h1 className="font-bold text-white">Safety Assistant</h1>
-          <p className="text-xs text-[#9ca3af]">AI-powered emergency guidance</p>
-        </div>
-      </div>
 
-      <div className="flex-1 overflow-y-auto bg-[#1e2130] rounded-2xl border border-[#2d3748] p-4 flex flex-col gap-4">
-        {messages.map((msg) => (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            key={msg.id}
-            className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
-          >
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${msg.role === 'user' ? 'bg-[#3b82f6]' : 'bg-[#8b5cf6]'}`}>
-              {msg.role === 'user' ? <User className="w-4 h-4 text-white" /> : <Shield className="w-4 h-4 text-white" />}
-            </div>
-            <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm ${msg.role === 'user' ? 'bg-[#3b82f6] text-white rounded-tr-none' : 'bg-[#2d3748] text-white rounded-tl-none'}`}>
-              <div className="markdown-body prose prose-invert max-w-none text-sm">
-                <ReactMarkdown>{msg.content}</ReactMarkdown>
+        {/* Main Grid */}
+        <div className="grid grid-cols-3 gap-8">
+          {/* Left: Chat Interface */}
+          <div className="col-span-2">
+            {/* Chat Header */}
+            <div className="flex items-center gap-4 bg-gray-900 border border-gray-800 rounded-lg p-6 mb-8">
+              <div className="bg-green-500/20 p-3 rounded-lg">
+                <Bot className="w-8 h-8 text-green-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white">SENTINEL AI</h3>
+                <p className="text-xs text-gray-400">AI-powered emergency guidance • Real-time monitoring active</p>
+              </div>
+              <div className="ml-auto">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                  <span className="text-sm text-green-400 font-semibold">ONLINE</span>
+                </div>
               </div>
             </div>
-          </motion.div>
-        ))}
-        {isLoading && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-3">
-            <div className="w-8 h-8 rounded-full bg-[#8b5cf6] flex items-center justify-center shrink-0">
-              <Shield className="w-4 h-4 text-white" />
-            </div>
-            <div className="bg-[#2d3748] rounded-2xl rounded-tl-none px-4 py-3 flex items-center gap-2">
-              <Loader2 className="w-4 h-4 text-[#9ca3af] animate-spin" />
-              <span className="text-xs text-[#9ca3af]">Analyzing situation...</span>
-            </div>
-          </motion.div>
-        )}
-        <div ref={messagesEndRef} />
-      </div>
 
-      <div className="flex gap-2">
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-          placeholder="Describe your situation..."
-          className="flex-1 bg-[#1e2130] border border-[#2d3748] rounded-full px-5 py-3 text-sm text-white placeholder:text-[#9ca3af] focus:outline-none focus:border-[#8b5cf6] transition-colors"
-        />
-        <button
-          onClick={handleSend}
-          disabled={isLoading || !input.trim()}
-          className="w-12 h-12 rounded-full bg-[#8b5cf6] flex items-center justify-center text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#7c3aed] transition-colors shrink-0"
-        >
-          <Send className="w-5 h-5 ml-0.5" />
-        </button>
+            {/* Messages */}
+            <div className="bg-gray-900 border border-gray-800 rounded-lg p-8 h-96 overflow-y-auto flex flex-col gap-6 mb-8">
+              {messages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={`flex gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
+                >
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${msg.role === 'user' ? 'bg-blue-600' : 'bg-green-600'}`}>
+                    {msg.role === 'user' ? <User className="w-5 h-5 text-white" /> : <Shield className="w-5 h-5 text-white" />}
+                  </div>
+                  <div className={`max-w-md rounded-lg px-4 py-3 ${msg.role === 'user' ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-100'}`}>
+                    <div className="text-sm leading-relaxed">
+                      <ReactMarkdown>{msg.content}</ReactMarkdown>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {isLoading && (
+                <div className="flex gap-4">
+                  <div className="w-10 h-10 rounded-lg bg-green-600 flex items-center justify-center shrink-0">
+                    <Shield className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="bg-gray-800 rounded-lg px-4 py-3 flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 text-green-400 animate-spin" />
+                    <span className="text-xs text-gray-400">Analyzing situation...</span>
+                  </div>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Input */}
+            <div className="flex gap-3">
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                placeholder="Describe your situation..."
+                className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-5 py-3 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:border-green-500 transition-colors"
+              />
+              <button
+                onClick={handleSend}
+                disabled={isLoading || !input.trim()}
+                className="bg-green-600 hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg transition-colors font-semibold flex items-center gap-2"
+              >
+                <Send size={18} />
+                Send
+              </button>
+            </div>
+          </div>
+
+          {/* Right: Map & Info */}
+          <div className="col-span-1 space-y-6">
+            {/* Map */}
+            <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
+              <h3 className="text-sm font-bold tracking-widest mb-4">CURRENT LOCATION</h3>
+              <div className="relative h-40 bg-gradient-to-b from-gray-800 to-gray-900 rounded overflow-hidden mb-4">
+                <div className="absolute inset-0 opacity-5" style={{
+                  backgroundImage: 'radial-gradient(circle at 40% 40%, #22c55e 1px, transparent 1px)',
+                  backgroundSize: '20px 20px'
+                }}></div>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="relative">
+                    <div className="w-8 h-8 bg-green-500/20 rounded-full flex items-center justify-center border-2 border-green-400">
+                      <MapPin size={16} className="text-green-400" />
+                    </div>
+                    <div className="absolute inset-0 border-2 border-green-400/30 rounded-full animate-pulse"></div>
+                  </div>
+                </div>
+              </div>
+              <p className="text-xs text-gray-400">GPS: {location.lat.toFixed(4)}° N</p>
+              <p className="text-xs text-gray-400">{Math.abs(location.lng).toFixed(4)}° W</p>
+            </div>
+
+            {/* Tactical Actions */}
+            <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
+              <h3 className="text-sm font-bold tracking-widest mb-4">QUICK ACTIONS</h3>
+              <div className="space-y-3">
+                <button className="w-full bg-red-600 hover:bg-red-500 text-white py-2 rounded-lg transition font-semibold text-xs tracking-widest">
+                  TRIGGER SOS
+                </button>
+                <button className="w-full bg-gray-800 hover:bg-gray-700 text-white py-2 rounded-lg transition font-semibold text-xs tracking-widest border border-gray-700">
+                  CALL 911
+                </button>
+                <button className="w-full bg-gray-800 hover:bg-gray-700 text-white py-2 rounded-lg transition font-semibold text-xs tracking-widest border border-gray-700">
+                  SHARE LOCATION
+                </button>
+              </div>
+            </div>
+
+            {/* Status */}
+            <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
+              <h3 className="text-sm font-bold tracking-widest mb-4">SYSTEM STATUS</h3>
+              <div className="space-y-3 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400">AI Response</span>
+                  <span className="text-green-400 font-bold">ACTIVE</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400">Location Tracking</span>
+                  <span className="text-green-400 font-bold">ENABLED</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400">Emergency Contacts</span>
+                  <span className="text-yellow-400 font-bold">3 READY</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
