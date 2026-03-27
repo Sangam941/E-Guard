@@ -172,7 +172,7 @@ export default function FakeCallPage() {
                               setCallerNumber(caller?.callerNumber ?? "");
                               setIsAccepted(false);
                               setCallDuration(0);
-                              setDelayTimer(5); // Reset ringing delay
+                              setDelayTimer(2); // Reset ringing delay
                               triggerFakeCall(caller?.callerName ?? "", caller?.callerNumber ?? "");
                             }}
                             className="w-12 h-12 bg-blue-600/10 hover:bg-blue-600 border border-blue-500/30 rounded-full flex items-center justify-center transition-all group-hover:border-blue-500 shadow-lg"

@@ -48,6 +48,12 @@ export const getSOSById = asyncHandler(async (req, res) => {
   res.json({ success: true, data: sos });
 });
 
+// GET /api/sos/user/me
+export const getFirstSOS = asyncHandler(async (req, res) => {
+  // Find the most recent SOS for the current user
+  const sos = await SOS.findOne({ userId: req.user._id }).sort({ createdAt: -1 });
+  res.json({ success: true, data: sos });
+});
 // GET /api/sos/user/:userId
 export const getUserSOS = asyncHandler(async (req, res) => {
   const sosList = await SOS.find({ userId: req.user._id }).sort({ createdAt: -1 });

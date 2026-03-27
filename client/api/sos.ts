@@ -2,10 +2,14 @@ import apiClient from './apiClient';
 
 export const triggerSOS = async (latitude: number, longitude: number) => {
   const response = await apiClient.post('/sos', { latitude, longitude });
-  console.log(response.data)
-  return response.data;
+  console.log(response.data.data)
+  return response.data.data;
 };
 
+export const getFirstSOS = async () => {
+  const response = await apiClient.get(`/sos/first`);
+  return response.data.data;
+};
 export const getSOS = async (id: string) => {
   const response = await apiClient.get(`/sos/${id}`);
   return response.data;

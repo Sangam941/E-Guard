@@ -4,14 +4,30 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Shield } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/store/useStore';
+import { triggerSOS } from '@/api/sos';
+import { useSOSStore } from '@/store/useSOSStore';
 
 export default function SOSPage() {
+  const { createSOS } = useSOSStore()
   const router = useRouter();
   const { activateSOS } = useStore();
   const [sosTriggered, setSOSTriggered] = useState(false);
   const [progress, setProgress] = useState(0);
   const holdTimerRef = useRef<NodeJS.Timeout | null>(null);
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const [location, setLocation] = useState({ lat: 40.7128, lng: -74.0060 });
+
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition((position) => {
+        setLocation({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
+      });
+    }
+  }, []);
 
   const handleMouseDown = () => {
     setProgress(0);
@@ -42,7 +58,7 @@ export default function SOSPage() {
   // Send alert when SOS is triggered
   useEffect(() => {
     if (sosTriggered) {
-      activateSOS();
+      createSOS(location.lat, location.lng);
       router.push('/sos/details');
     }
   }, [sosTriggered, activateSOS, router]);

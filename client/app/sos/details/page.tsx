@@ -5,34 +5,37 @@ import { useRouter } from 'next/navigation';
 import { MapPin } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import dynamic from 'next/dynamic';
+import { useSOSStore } from '@/store/useSOSStore';
 
 const MapView = dynamic(() => import('@/components/MapView'), { ssr: false });
 
 export default function SOSDetailsPage() {
+  const { sos, fetchFirstSOS } = useSOSStore()
   const router = useRouter();
   const { isSOSActive, deactivateSOS } = useStore();
-  const [location, setLocation] = useState({ lat: 40.7128, lng: -74.0060 });
+  // const [location, setLocation] = useState({ lat: 40.7128, lng: -74.0060 });
 
-  useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition((position) => {
-        setLocation({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-        });
-      });
-    }
-  }, []);
+  // useEffect(() => {
+  //   if (navigator.geolocation) {
+  //     navigator.geolocation.getCurrentPosition((position) => {
+  //       setLocation({
+  //         lat: position.coords.latitude,
+  //         lng: position.coords.longitude,
+  //       });
+  //     });
+  //   }
+  // }, []);
 
   // Redirect if no active SOS
   useEffect(() => {
-    if (!isSOSActive) {
-      router.push('/sos');
-    }
-  }, [isSOSActive, router]);
+    fetchFirstSOS()
+  }, [])
+  
+  // Redirect check removed - relying on useSOSStore instead
 
   const handleCancel = async () => {
-    await deactivateSOS();
+    // Optionally add a cancel method from useSOSStore here if needed
+    // await deactivateSOS();
     router.push('/sos');
   };
 
@@ -67,8 +70,8 @@ export default function SOSDetailsPage() {
             <div className="col-span-2">
               <div className="bg-gray-900 border border-gray-800 rounded-lg p-8">
                 <div className="relative h-96 bg-gray-900 rounded overflow-hidden mb-6">
-                  {location.lat && location.lng ? (
-                    <MapView lat={location.lat} lng={location.lng} />
+                  {sos?.latitude && sos.longitude ? (
+                    <MapView lat={sos.latitude} lng={sos.longitude} />
                   ) : null}
 
                   {/* Distance Marker Overlay */}
@@ -80,7 +83,7 @@ export default function SOSDetailsPage() {
                 {/* Coordinates */}
                 <div className="p-4 bg-gray-800 rounded border border-gray-700">
                   <p className="text-xs text-gray-400 mb-2">GPS COORDINATES</p>
-                  <p className="text-base font-mono text-green-400 font-bold">{location.lat.toFixed(4)}° N, {Math.abs(location.lng).toFixed(4)}° W</p>
+                  <p className="text-base font-mono text-green-400 font-bold">{sos?.latitude?.toFixed(4) || '0.0000'}° N, {Math.abs(sos?.longitude || 0).toFixed(4)}° W</p>
                 </div>
               </div>
             </div>
