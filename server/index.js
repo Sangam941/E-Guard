@@ -1,16 +1,17 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { createServer } from 'http';
 import connectDB from './config/database.js';
 
 import authRoutes from './routes/auth.js';
-
 import sosRoutes from './routes/sos.js';
 import contactsRoutes from './routes/contacts.js';
 import fakeCallRoutes from './routes/fakeCall.js';
 import uploadRoutes from './routes/upload.js';
 import alertsRoutes from './routes/alerts.js';
 import chatRoutes from './routes/chat.js';
+import { initializeSocket } from './src/socket/socketHandler.js';
 
 dotenv.config();
 
@@ -51,6 +52,12 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+const server = createServer(app);
+
+// Initialize Socket.IO
+const io = initializeSocket(server);
+
+server.listen(PORT, () => {
   console.log(`E-Guard server running on port ${PORT}`);
+  console.log(`[Socket.IO] Socket.IO server initialized`);
 });

@@ -2,6 +2,7 @@ import asyncHandler from 'express-async-handler';
 import SOS from '../models/SOS.js';
 import Contact from '../models/Contact.js';
 import Alert from '../models/Alert.js';
+import { broadcastSOSAlert } from '../src/socket/socketHandler.js';
 
 // POST /api/sos
 export const triggerSOS = asyncHandler(async (req, res) => {
@@ -34,6 +35,16 @@ export const triggerSOS = asyncHandler(async (req, res) => {
     }));
     await Alert.insertMany(alertDocs);
   }
+
+  // Broadcast SOS alert to all monitor listeners in real-time
+  const sosAlert = {
+    id: sos._id.toString(),
+    userId: userId.toString(),
+    location: { lat: latitude, lng: longitude },
+    timestamp: new Date(),
+    silentMode: silentMode || false,
+  };
+  broadcastSOSAlert(sosAlert);
 
   res.status(201).json({ success: true, data: sos });
 });
