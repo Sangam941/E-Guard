@@ -18,3 +18,4 @@ router.patch('/:id/read', markAsRead);
 router.get('/', getAlerts);
 
 export default router;
+ 
