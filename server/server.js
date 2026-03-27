@@ -1,16 +1,17 @@
-require('dotenv').config();
-const express = require('express');
-const connectDB = require('./config/database');
-const corsMiddleware = require('./middleware/cors');
-const errorHandler = require('./middleware/errorHandler');
+import dotenv from 'dotenv';
+dotenv.config();
+import express from 'express';
+import connectDB from './config/database.js';
+import corsMiddleware from './middleware/cors.js';
+import errorHandler from './middleware/errorHandler.js';
 
 // Import routes
-const sosRoutes = require('./routes/sos');
-const chatRoutes = require('./routes/chat');
-const contactRoutes = require('./routes/contacts');
-const alertRoutes = require('./routes/alerts');
-const fakeCallRoutes = require('./routes/fake-call');
-const uploadRoutes = require('./routes/upload');
+import sosRoutes from './routes/sos.js';
+import chatRoutes from './routes/chat.js';
+import contactRoutes from './routes/contacts.js';
+import alertRoutes from './routes/alerts.js';
+import fakeCallRoutes from './routes/fake-call.js';
+import uploadRoutes from './routes/upload.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;

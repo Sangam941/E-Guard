@@ -1,5 +1,5 @@
-const express = require('express');
-const fakeCallController = require('../controllers/fakeCallController');
+import express from 'express';
+import * as fakeCallController from '../controllers/fakeCallController.js';
 
 const router = express.Router();
 
@@ -7,4 +7,4 @@ router.post('/', fakeCallController.createFakeCall);
 router.patch('/:id/stop', fakeCallController.stopFakeCall);
 router.get('/user/:userId', fakeCallController.getUserFakeCalls);
 
-module.exports = router;
+export default router;
