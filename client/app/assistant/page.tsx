@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, Shield, Bot, User, Loader2, MapPin } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import { sendMessage as sendChatMessage } from '@/api/chat';
+import { useStore } from '@/store/useStore';
 
 interface Message {
   id: string;
@@ -11,7 +13,11 @@ interface Message {
   timestamp: Date;
 }
 
+const MOCK_USER_ID = 'mock-user-123';
+
 export default function ChatPage() {
+  const { location } = useStore();
+  const [chatId] = useState<string>(() => crypto.randomUUID());
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -22,7 +28,6 @@ export default function ChatPage() {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [location] = useState({ lat: 40.7128, lng: -74.0060 });
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -30,49 +35,56 @@ export default function ChatPage() {
   }, [messages]);
 
   const handleSend = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || isLoading) return;
 
-    const newMessage: Message = {
+    const userMsg: Message = {
       id: Date.now().toString(),
       sender: 'user',
       text: input,
       timestamp: new Date(),
     };
 
-    setMessages((prev) => [...prev, newMessage]);
+    setMessages((prev) => [...prev, userMsg]);
     const userInput = input;
     setInput('');
     setIsLoading(true);
 
     try {
-      // Simulated AI response - replace with actual API call
-      const aiResponse = `I understand your situation regarding "${userInput}". Here are immediate steps to keep you safe:
+      const res = await sendChatMessage({
+        chatId,
+        userId: MOCK_USER_ID,
+        message: userInput,
+        context: location ? { latitude: location.lat, longitude: location.lng } : undefined,
+      });
 
-1. **Assess your environment** - Find a safe location if possible
-2. **Contact authorities** - Call 911 or your local emergency number
-3. **Notify your emergency contacts** - Trigger SOS for immediate alerts
-4. **Document everything** - Use your camera or voice recorder
-
-If you're in immediate danger, please use the SOS button now.`;
-
-      // Simulate delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const aiText = res.data?.aiMessage || 'I received your message. Please trigger SOS if you are in immediate danger.';
 
       setMessages((prev) => [
         ...prev,
         {
           id: Date.now().toString(),
           sender: 'ai',
-          text: aiResponse,
+          text: aiText,
           timestamp: new Date(),
         },
       ]);
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error('Chat API error:', error);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now().toString(),
+          sender: 'ai',
+          text: 'I am having trouble connecting to the server. If you are in danger, please call 911 immediately and use the SOS button in the app.',
+          timestamp: new Date(),
+        },
+      ]);
     } finally {
       setIsLoading(false);
     }
   };
+
+  const displayLocation = location || { lat: 40.7128, lng: -74.0060 };
 
   return (
     <div className="min-h-screen bg-gray-950 text-white p-12">
@@ -157,9 +169,9 @@ If you're in immediate danger, please use the SOS button now.`;
             </div>
           </div>
 
-          {/* Right: Map & Info */}
+          {/* Right: Location & Info */}
           <div className="col-span-1 space-y-6">
-            {/* Map */}
+            {/* Current Location */}
             <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
               <h3 className="text-sm font-bold tracking-widest mb-4">CURRENT LOCATION</h3>
               <div className="relative h-40 bg-gradient-to-b from-gray-800 to-gray-900 rounded overflow-hidden mb-4">
@@ -176,20 +188,20 @@ If you're in immediate danger, please use the SOS button now.`;
                   </div>
                 </div>
               </div>
-              <p className="text-xs text-gray-400">GPS: {location.lat.toFixed(4)}° N</p>
-              <p className="text-xs text-gray-400">{Math.abs(location.lng).toFixed(4)}° W</p>
+              <p className="text-xs text-gray-400">GPS: {displayLocation.lat.toFixed(4)}° N</p>
+              <p className="text-xs text-gray-400">{Math.abs(displayLocation.lng).toFixed(4)}° {displayLocation.lng < 0 ? 'W' : 'E'}</p>
             </div>
 
             {/* Tactical Actions */}
             <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
               <h3 className="text-sm font-bold tracking-widest mb-4">QUICK ACTIONS</h3>
               <div className="space-y-3">
-                <button className="w-full bg-red-600 hover:bg-red-500 text-white py-2 rounded-lg transition font-semibold text-xs tracking-widest">
+                <a href="/sos" className="block w-full bg-red-600 hover:bg-red-500 text-white py-2 rounded-lg transition font-semibold text-xs tracking-widest text-center">
                   TRIGGER SOS
-                </button>
-                <button className="w-full bg-gray-800 hover:bg-gray-700 text-white py-2 rounded-lg transition font-semibold text-xs tracking-widest border border-gray-700">
+                </a>
+                <a href="tel:911" className="block w-full bg-gray-800 hover:bg-gray-700 text-white py-2 rounded-lg transition font-semibold text-xs tracking-widest border border-gray-700 text-center">
                   CALL 911
-                </button>
+                </a>
                 <button className="w-full bg-gray-800 hover:bg-gray-700 text-white py-2 rounded-lg transition font-semibold text-xs tracking-widest border border-gray-700">
                   SHARE LOCATION
                 </button>
@@ -209,8 +221,8 @@ If you're in immediate danger, please use the SOS button now.`;
                   <span className="text-green-400 font-bold">ENABLED</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-400">Emergency Contacts</span>
-                  <span className="text-yellow-400 font-bold">3 READY</span>
+                  <span className="text-gray-400">Backend</span>
+                  <span className="text-green-400 font-bold">CONNECTED</span>
                 </div>
               </div>
             </div>

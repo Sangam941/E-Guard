@@ -1,11 +1,20 @@
 import express from 'express';
-import * as alertController from '../controllers/alertController.js';
+import {
+  getAlerts,
+  getAlertById,
+  markAsRead,
+  markAllAsRead,
+} from '../controllers/alertsController.js';
+import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-router.get('/:userId', alertController.getAlerts);
-router.get('/detail/:id', alertController.getAlertById);
-router.patch('/:id/read', alertController.markAsRead);
-router.patch('/user/:userId/read-all', alertController.markAllAsRead);
+router.use(protect);
+
+// Specific sub-paths must come BEFORE param-based routes
+router.get('/detail/:id', getAlertById);
+router.patch('/user/:userId/read-all', markAllAsRead);
+router.patch('/:id/read', markAsRead);
+router.get('/', getAlerts);
 
 export default router;

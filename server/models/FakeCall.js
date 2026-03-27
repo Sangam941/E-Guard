@@ -1,21 +1,17 @@
 import mongoose from 'mongoose';
 
 const fakeCallSchema = new mongoose.Schema({
-  userId: {
+  userId: { type: mongoose.Schema.Types.ObjectId, required: true, ref: 'User', index: true },
+  callerName: { type: String, required: true },
+  callerNumber: { type: String, required: true },
+  delaySeconds: { type: Number, default: 5 },
+  scheduleTime: { type: Date },
+  duration: { type: Number, default: 0 },
+  status: {
     type: String,
-    required: true,
+    enum: ['pending', 'active', 'stopped'],
+    default: 'pending',
   },
-  callerId: String, // Who is calling
-  callerName: String,
-  voiceProfile: String,
-  callTheme: String, // e.g., "Work", "Urgent", etc.
-  delay: Number, // milliseconds
-  duration: Number,
-  isActive: Boolean,
-  timestamp: {
-    type: Date,
-    default: Date.now,
-  },
-});
+}, { timestamps: true });
 
 export default mongoose.model('FakeCall', fakeCallSchema);

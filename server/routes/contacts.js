@@ -1,11 +1,19 @@
 import express from 'express';
-import * as contactController from '../controllers/contactController.js';
+import {
+  createContact,
+  getContacts,
+  updateContact,
+  deleteContact,
+} from '../controllers/contactsController.js';
+import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-router.post('/', contactController.createContact);
-router.get('/:userId', contactController.getContacts);
-router.patch('/:id', contactController.updateContact);
-router.delete('/:id', contactController.deleteContact);
+router.use(protect);
+
+router.post('/', createContact);
+router.get('/:userId', getContacts);
+router.patch('/:id', updateContact);
+router.delete('/:id', deleteContact);
 
 export default router;

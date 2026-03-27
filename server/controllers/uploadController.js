@@ -1,57 +1,57 @@
-import cloudinary from '../config/cloudinary.js';
-import SOS from '../models/SOS.js';
+import asyncHandler from 'express-async-handler';
+import { v2 as cloudinary } from 'cloudinary';
+import Evidence from '../models/Evidence.js';
+import dotenv from 'dotenv';
+dotenv.config();
 
-export const uploadEvidence = async (req, res, next) => {
-  try {
-    const { sosId, type } = req.body; // type: 'audio' or 'video'
-    const file = req.file;
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
-    if (!file || !sosId || !type) {
-      return res.status(400).json({
-        success: false,
-        message: 'File, sosId, and type are required',
-      });
-    }
+// POST /api/upload
+export const uploadEvidence = asyncHandler(async (req, res) => {
+  const { sosId, type } = req.body;
+  const userId = req.user._id;
 
-    // Upload to Cloudinary
-    const result = await new Promise((resolve, reject) => {
-      const uploadStream = cloudinary.uploader.upload_stream(
-        {
-          resource_type: 'auto',
-          folder: 'e-guard-ai/evidence',
-          public_id: `${sosId}-${type}-${Date.now()}`,
-        },
-        (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
-        }
-      );
-
-      uploadStream.end(file.buffer);
-    });
-
-    // Update SOS record
-    const updateData = type === 'audio' ? { audioEvidence: result.secure_url } : { videoEvidence: result.secure_url };
-    const sos = await SOS.findByIdAndUpdate(sosId, updateData, { new: true });
-
-    res.json({
-      success: true,
-      message: `${type} uploaded successfully`,
-      data: {
-        url: result.secure_url,
-        publicId: result.public_id,
-        sosId: sos._id,
-      },
-    });
-  } catch (error) {
-    next(error);
+  if (!userId || !type) {
+    res.status(400).json({ success: false, message: 'userId and type are required' });
+    return;
   }
-};
 
-export const getUploadProgress = (req, res) => {
-  // This is a placeholder for real-time upload progress
-  res.json({
-    success: true,
-    progress: 0,
+  let fileUrl = '';
+  let publicId = '';
+
+  // If a file was actually uploaded via multer
+  if (req.file) {
+    const result = await cloudinary.uploader.upload(req.file.path, {
+      folder: 'eguard/evidence',
+      resource_type: 'auto',
+    });
+    fileUrl = result.secure_url;
+    publicId = result.public_id;
+  } else {
+    // No real file (e.g. frontend sent simulated blob) — store a placeholder
+    fileUrl = `https://eguard.placeholder/${type}_${Date.now()}`;
+    publicId = `placeholder_${Date.now()}`;
+  }
+
+  const evidence = await Evidence.create({
+    userId,
+    sosId: sosId || undefined,
+    type,
+    fileUrl,
+    publicId,
+    timestamp: new Date(),
   });
-};
+
+  res.status(201).json({ success: true, data: evidence });
+});
+
+// GET /api/upload/progress/:sosId
+export const getUploadProgress = asyncHandler(async (req, res) => {
+  const evidenceList = await Evidence.find({ sosId: req.params.sosId }).sort({ createdAt: -1 });
+  res.json({ success: true, data: evidenceList });
+});
