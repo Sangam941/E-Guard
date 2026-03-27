@@ -9,3 +9,4 @@ router.patch('/:id/read', alertController.markAsRead);
 router.patch('/user/:userId/read-all', alertController.markAllAsRead);
 
 export default router;
+ 
