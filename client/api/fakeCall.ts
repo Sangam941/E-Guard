@@ -1,8 +1,11 @@
 import apiClient from './apiClient';
 
-export const createFakeCall = async (data: { callerName: string; callerNumber: string; delaySeconds?: number; scheduleTime?: Date; duration?: number }) => {
-  const response = await apiClient.post('/fake-call', data);
-  return response.data;
+export const createFakeCall = async (callerName:string, callerNumber:string) => {
+  console.log("callename:: ", callerName)
+  console.log("number:: ", callerNumber)
+  const response = await apiClient.post('/fake-call', {callerName, callerNumber});
+  console.log(response.data.data)
+  return response.data.data;
 };
 
 export const stopFakeCall = async (id: string) => {
@@ -12,5 +15,6 @@ export const stopFakeCall = async (id: string) => {
 
 export const getUserFakeCalls = async () => {
   const response = await apiClient.get('/fake-call/user');
-  return response.data;
+  console.log(response.data.data)
+  return response.data.data;
 };

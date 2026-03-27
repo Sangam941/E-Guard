@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, Shield, AlertCircle, CheckCircle } from 'lucide-react';
 import { useStore } from '@/store/useStore';
+import { registerUser } from '@/api/auth';
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -45,21 +46,19 @@ export default function RegisterPage() {
     setError('');
     setIsLoading(true);
 
+
+
     if (!validateForm()) {
       setIsLoading(false);
       return;
     }
 
     try {
-      // TODO: Replace with actual API call for registration only
-      // For now, simulate registration without auto-login
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      // Show success message and redirect to login page
+      await registerUser(formData.username, formData.email, formData.password)
       setSuccess(true);
       setTimeout(() => {
         router.push('/login');
-      }, 2000);
+      }, 500);
     } catch (err: any) {
       setError(err.message || 'Registration failed. Please try again.');
     } finally {

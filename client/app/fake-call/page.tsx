@@ -1,16 +1,30 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Phone, PhoneOff, PhoneCall, User, Clock, AlertCircle } from 'lucide-react';
+import { Phone, PhoneOff, PhoneCall, User, Clock, AlertCircle, X } from 'lucide-react';
 import { useStore } from '@/store/useStore';
+import { useFreeCallStore } from '@/store/useFreeCall';
 
 export default function FakeCallPage() {
+  const { setFakeCall, fetchFreeCall, fakeCall } = useFreeCallStore()
   const { isFakeCallActive, triggerFakeCall, endFakeCall } = useStore();
   const [isAccepted, setIsAccepted] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
   const [delayTimer, setDelayTimer] = useState(5);
-  const [callerName, setCallerName] = useState('Dad');
-  const [callerNumber, setCallerNumber] = useState('+1 (555) 123-4567');
+  
+  // Active call view state
+  const [callerName, setCallerName] = useState('');
+  const [callerNumber, setCallerNumber] = useState('');
+
+  // Saved Callers list state
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newCallerName, setNewCallerName] = useState('');
+  const [newCallerNumber, setNewCallerNumber] = useState('');
+
+  useEffect(() => {
+    fetchFreeCall()
+  }, [])
+  
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -32,16 +46,19 @@ export default function FakeCallPage() {
     return () => clearInterval(interval);
   }, [isFakeCallActive, isAccepted]);
 
-  const handleTriggerCall = () => {
-    triggerFakeCall(callerName, callerNumber);
-  };
-
   const handleAccept = () => setIsAccepted(true);
   const handleReject = () => {
     setIsAccepted(false);
     setCallDuration(0);
     setDelayTimer(5);
     endFakeCall();
+  };
+
+  const handleCreateCaller = async () => {
+    await setFakeCall (newCallerName, newCallerNumber)
+    setNewCallerName('');
+    setNewCallerNumber('');
+    setIsModalOpen(false);
   };
 
   const formatTime = (seconds: number) => {
@@ -53,7 +70,66 @@ export default function FakeCallPage() {
   // Configuration Screen
   if (!isFakeCallActive) {
     return (
-      <div className="min-h-screen bg-gray-950 text-white p-12">
+      <div className="min-h-screen bg-gray-950 text-white p-12 relative">
+        {/* Modal Overlay */}
+        {isModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <div className="bg-gray-900 border border-gray-800 rounded-lg p-8 w-full max-w-md relative shadow-2xl">
+              <button 
+                onClick={() => setIsModalOpen(false)}
+                className="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors"
+              >
+                <X size={20} />
+              </button>
+              
+              <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                <User className="text-blue-400" />
+                Configure Fake Caller
+              </h3>
+              
+              <div className="space-y-6">
+                <div>
+                  <label className="text-xs font-bold text-gray-400 block mb-2">CALLER NAME</label>
+                  <input
+                    type="text"
+                    value={newCallerName}
+                    onChange={(e) => setNewCallerName(e.target.value)}
+                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder:text-gray-600 focus:outline-none focus:border-blue-500 transition-colors"
+                    placeholder="Enter caller name (e.g. Mom)"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-gray-400 block mb-2">PHONE NUMBER</label>
+                  <input
+                    type="tel"
+                    value={newCallerNumber}
+                    onChange={(e) => setNewCallerNumber(e.target.value)}
+                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder:text-gray-600 focus:outline-none focus:border-blue-500 transition-colors"
+                    placeholder="Enter phone number"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-8 flex gap-4">
+                <button
+                  onClick={() => setIsModalOpen(false)}
+                  className="flex-1 py-3 rounded-lg font-bold text-gray-300 bg-gray-800 hover:bg-gray-700 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCreateCaller}
+                  disabled={!newCallerName || !newCallerNumber}
+                  className="flex-1 py-3 rounded-lg font-bold text-white bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg shadow-blue-600/20"
+                >
+                  Create Caller
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="mb-12">
@@ -64,61 +140,59 @@ export default function FakeCallPage() {
 
           {/* Main Grid */}
           <div className="grid grid-cols-2 gap-12">
-            {/* Left: Configuration Form */}
+            {/* Left: Saved Callers List */}
             <div>
               <div className="bg-gray-900 border border-gray-800 rounded-lg p-8 mb-8">
-                <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
-                  <PhoneCall className="text-blue-400" />
-                  Caller Configuration
-                </h3>
-                
-                <div className="space-y-6">
-                  <div>
-                    <label className="text-xs font-bold text-gray-400 block mb-2">CALLER NAME</label>
-                    <input
-                      type="text"
-                      value={callerName}
-                      onChange={(e) => setCallerName(e.target.value)}
-                      className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder:text-gray-600 focus:outline-none focus:border-blue-500 transition-colors"
-                      placeholder="Enter caller name"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-bold text-gray-400 block mb-2">PHONE NUMBER</label>
-                    <input
-                      type="tel"
-                      value={callerNumber}
-                      onChange={(e) => setCallerNumber(e.target.value)}
-                      className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder:text-gray-600 focus:outline-none focus:border-blue-500 transition-colors"
-                      placeholder="Enter phone number"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-bold text-gray-400 block mb-2">DELAY BEFORE CALL (seconds)</label>
-                    <input
-                      type="number"
-                      defaultValue="5"
-                      min="0"
-                      max="60"
-                      className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder:text-gray-600 focus:outline-none focus:border-blue-500 transition-colors"
-                    />
-                  </div>
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                    <PhoneCall className="text-blue-400" />
+                    Saved Fake Callers
+                  </h3>
+                  <button 
+                    onClick={() => setIsModalOpen(true)}
+                    className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors shadow-lg shadow-blue-600/20"
+                  >
+                    + Create Caller
+                  </button>
                 </div>
-
-                <button
-                  onClick={() => {
-                    setIsAccepted(false);
-                    setCallDuration(0);
-                    setDelayTimer(5);
-                    triggerFakeCall(callerName, callerNumber);
-                  }}
-                  className="w-full mt-8 py-4 rounded-lg font-bold text-white bg-blue-600 hover:bg-blue-500 transition-colors shadow-lg shadow-blue-600/20"
-                >
-                  <PhoneCall className="inline mr-2" size={18} />
-                  Trigger Fake Call
-                </button>
+                
+                <div className="space-y-4">
+                  {(fakeCall && fakeCall.length > 0) ? (
+                    fakeCall?.map((caller, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between p-4 bg-gray-800 border border-gray-700 rounded-lg hover:border-gray-600 transition-colors group"
+                      >
+                        <div className="flex items-center gap-4">
+                          {/* Trigger Fake Call Button */}
+                          <button
+                            onClick={() => {
+                              console.log("caller:::", caller)
+                              setCallerName(caller?.callerName ?? "");
+                              setCallerNumber(caller?.callerNumber ?? "");
+                              setIsAccepted(false);
+                              setCallDuration(0);
+                              setDelayTimer(5); // Reset ringing delay
+                              triggerFakeCall(caller?.callerName ?? "", caller?.callerNumber ?? "");
+                            }}
+                            className="w-12 h-12 bg-blue-600/10 hover:bg-blue-600 border border-blue-500/30 rounded-full flex items-center justify-center transition-all group-hover:border-blue-500 shadow-lg"
+                            title="Trigger Fake Call"
+                          >
+                            <PhoneCall className="w-5 h-5 text-blue-400 group-hover:text-white transition-colors" />
+                          </button>
+                          <div>
+                            <h4 className="text-white font-bold">{caller?.callerName}</h4>
+                            <p className="text-gray-400 text-sm">{caller?.callerNumber}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-gray-500 text-sm text-center py-4 bg-gray-800/50 rounded-lg">
+                      No saved callers yet. Create one above.
+                    </p>
+                  )}
+                </div>
               </div>
 
               {/* Info Box */}
@@ -128,10 +202,11 @@ export default function FakeCallPage() {
                   How it Works
                 </h4>
                 <ul className="space-y-2 text-xs text-gray-400">
-                  <li>• Phone will ring after your set delay</li>
+                  <li>• Click the phone icon next to a contact to start ringing</li>
+                  <li>• Phone will ring after a 5 second delay</li>
                   <li>• Choose to accept or decline the call</li>
                   <li>• Gives you a believable excuse to leave</li>
-                  <li>• Trigger immediately if in danger</li>
+                  <li>• Use the modal configuration to add believable numbers</li>
                 </ul>
               </div>
             </div>
@@ -146,18 +221,18 @@ export default function FakeCallPage() {
                     <User className="w-12 h-12 text-blue-400" />
                   </div>
                   
-                  <h4 className="text-3xl font-bold text-white mb-2">Dad</h4>
-                  <p className="text-gray-400 mb-8">+1 (555) 123-4567</p>
+                  <h4 className="text-3xl font-bold text-white mb-2">{callerName}</h4>
+                  <p className="text-gray-400 mb-8">{callerNumber}</p>
                   
                   <div className="text-center mb-8">
                     <p className="text-sm text-gray-500 mb-2">Status:</p>
-                    <p className="text-lg font-bold text-yellow-400">READY TO CALL</p>
+                    <p className="text-lg font-bold text-yellow-400">WAITING FOR TRIGGER</p>
                   </div>
                 </div>
 
                 <div className="mt-8 p-6 bg-blue-600/10 border border-blue-600/30 rounded-lg">
                   <p className="text-xs text-blue-300 leading-relaxed">
-                    The call will ring on your device. You can accept or reject. This tool is designed to help you safely exit uncomfortable situations.
+                    Triggering a fake call will simulate an incoming call on your device. You can accept or reject it like a real call. We recommend preparing the caller name in advance.
                   </p>
                 </div>
               </div>
@@ -184,8 +259,8 @@ export default function FakeCallPage() {
         </div>
         
         <div className="text-center">
-          <h1 className="text-6xl font-light text-white mb-2">Dad</h1>
-          <p className="text-2xl text-gray-400">+1 (555) 123-4567</p>
+          <h1 className="text-6xl font-light text-white mb-2">{callerName}</h1>
+          <p className="text-2xl text-gray-400">{callerNumber}</p>
           
           <div className="mt-8">
             {!isAccepted ? (

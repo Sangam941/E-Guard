@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Shield, Zap, Mic, Phone, Lock, Settings, LogOut, Menu, X } from 'lucide-react';
 import { useStore } from '@/store/useStore';
+import { useAuthStore } from '@/store/useAuthStore';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -12,7 +13,8 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
-  const { isSOSActive, logout } = useStore();
+  const {logout} = useAuthStore()
+  const { isSOSActive } = useStore();
   const pathname = usePathname();
   const router = useRouter();
 
@@ -143,7 +145,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
           <button 
             onClick={() => {
               logout();
-              router.push('/register');
+              router.push('/login');
             }}
             className="w-full flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-red-900/20 hover:text-red-300 rounded-lg transition-all duration-200 group hover:shadow-lg hover:shadow-red-900/30 hover:border hover:border-red-600/30"
           >
