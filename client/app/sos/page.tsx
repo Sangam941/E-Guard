@@ -2,17 +2,18 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { MapPin, Shield } from 'lucide-react';
+import { useStore } from '@/store/useStore';
 
 export default function SOSPage() {
-  const [location, setLocation] = useState({ lat: 40.7128, lng: -74.0060 });
+  const { activateSOS, deactivateSOS, isSOSActive, location, setLocation, currentSOSId } = useStore();
   const [isSending, setIsSending] = useState(false);
-  const [alertSent, setAlertSent] = useState(false);
   const [sosTriggered, setSOSTriggered] = useState(false);
-  const alertSentRef = useRef(false);
   const [progress, setProgress] = useState(0);
   const holdTimerRef = useRef<NodeJS.Timeout | null>(null);
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const triggeredRef = useRef(false);
 
+  // Get real GPS location
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition((position) => {
@@ -22,17 +23,20 @@ export default function SOSPage() {
         });
       });
     }
-  }, []);
+  }, [setLocation]);
 
   const handleMouseDown = () => {
     setProgress(0);
-    
+
     progressIntervalRef.current = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 100) {
           if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
           if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
-          setSOSTriggered(true);
+          if (!triggeredRef.current) {
+            triggeredRef.current = true;
+            setSOSTriggered(true);
+          }
           return 100;
         }
         return prev + 5;
@@ -40,33 +44,36 @@ export default function SOSPage() {
     }, 50);
 
     holdTimerRef.current = setTimeout(() => {
-      setSOSTriggered(true);
+      if (!triggeredRef.current) {
+        triggeredRef.current = true;
+        setSOSTriggered(true);
+      }
     }, 1000);
   };
 
   const handleMouseUp = () => {
     if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
     if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+    if (!triggeredRef.current) setProgress(0);
+  };
+
+  // Send real SOS when triggered
+  useEffect(() => {
+    if (sosTriggered && !isSOSActive) {
+      setIsSending(true);
+      activateSOS().finally(() => setIsSending(false));
+    }
+  }, [sosTriggered, isSOSActive, activateSOS]);
+
+  const handleCancel = async () => {
+    await deactivateSOS();
+    setSOSTriggered(false);
+    triggeredRef.current = false;
     setProgress(0);
   };
 
-  // Send alert when SOS is triggered
-  useEffect(() => {
-    if (sosTriggered && !alertSentRef.current) {
-      alertSentRef.current = true;
-      
-      // Wrap state updates in a microtask to avoid cascading renders
-      queueMicrotask(() => {
-        setIsSending(true);
-        
-        // Simulate sending alert - replace with actual API call
-        setTimeout(() => {
-          setAlertSent(true);
-          setIsSending(false);
-        }, 1000);
-      });
-    }
-  }, [sosTriggered]);
+  // Use real location from store, fall back to default
+  const displayLocation = location || { lat: 40.7128, lng: -74.0060 };
 
   // Step 1: Hold to Trigger Screen
   if (!sosTriggered) {
@@ -88,21 +95,9 @@ export default function SOSPage() {
 
               {/* Progress Ring SVG */}
               <svg className="absolute inset-0 w-full h-full -rotate-90" style={{ filter: 'drop-shadow(0 0 10px rgba(220, 38, 38, 0.3))' }}>
+                <circle cx="128" cy="128" r="120" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="6" />
                 <circle
-                  cx="128"
-                  cy="128"
-                  r="120"
-                  fill="none"
-                  stroke="rgba(255,255,255,0.2)"
-                  strokeWidth="6"
-                />
-                <circle
-                  cx="128"
-                  cy="128"
-                  r="120"
-                  fill="none"
-                  stroke="white"
-                  strokeWidth="6"
+                  cx="128" cy="128" r="120" fill="none" stroke="white" strokeWidth="6"
                   strokeDasharray={`${(progress / 100) * 754} 754`}
                   strokeLinecap="round"
                   className="transition-all duration-75"
@@ -139,11 +134,13 @@ export default function SOSPage() {
             <div>
               <p className="text-green-400 text-xs font-bold tracking-widest mb-4">● CRITICAL EVENT LIVE</p>
               <h1 className="text-7xl font-bold mb-2">ALERT</h1>
-              <h2 className="text-6xl font-bold text-white">SENT</h2>
+              <h2 className="text-6xl font-bold text-white">
+                {isSending ? 'SENDING...' : 'SENT'}
+              </h2>
             </div>
             <div className="space-y-4 text-right text-sm">
               <div className="flex items-center justify-end gap-3">
-                <div className="w-3 h-3 bg-green-400 rounded-full"></div>
+                <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
                 <span className="text-gray-400">UPLINK</span>
                 <span className="text-green-400 font-semibold">SECURE / ACTIVE</span>
               </div>
@@ -185,11 +182,6 @@ export default function SOSPage() {
                     </div>
                   </div>
 
-                  {/* Distance Marker */}
-                  <div className="absolute top-12 left-1/3 bg-yellow-500 text-black px-4 py-2 rounded text-xs font-bold">
-                    UNI-4A
-                  </div>
-
                   {/* Zoom Controls */}
                   <div className="absolute right-6 bottom-6 flex flex-col gap-2">
                     <button className="w-12 h-12 bg-gray-800 hover:bg-gray-700 rounded flex items-center justify-center text-2xl font-bold">+</button>
@@ -200,7 +192,12 @@ export default function SOSPage() {
                 {/* Coordinates */}
                 <div className="p-4 bg-gray-800 rounded border border-gray-700">
                   <p className="text-xs text-gray-400 mb-2">GPS COORDINATES</p>
-                  <p className="text-base font-mono text-green-400 font-bold">{location.lat.toFixed(4)}° N, {Math.abs(location.lng).toFixed(4)}° W</p>
+                  <p className="text-base font-mono text-green-400 font-bold">
+                    {displayLocation.lat.toFixed(4)}° N, {Math.abs(displayLocation.lng).toFixed(4)}° {displayLocation.lng < 0 ? 'W' : 'E'}
+                  </p>
+                  {currentSOSId && (
+                    <p className="text-xs text-gray-600 mt-1 font-mono">SOS ID: {currentSOSId}</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -210,42 +207,27 @@ export default function SOSPage() {
               {/* Notified Contacts */}
               <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
                 <h3 className="text-sm font-bold tracking-widest mb-6">
-                  NOTIFIED CONTACTS <span className="text-green-400">3 ACTIVE</span>
+                  NOTIFIED CONTACTS <span className="text-green-400">ACTIVE</span>
                 </h3>
                 <div className="space-y-4">
                   <div className="flex items-center gap-3 pb-4 border-b border-gray-800">
                     <div className="w-10 h-10 bg-gray-800 rounded flex items-center justify-center text-lg">👤</div>
                     <div className="flex-1">
-                      <p className="text-xs font-bold">MARCUS V.</p>
-                      <p className="text-xs text-gray-500">EMERGENCY CONTACT</p>
+                      <p className="text-xs font-bold">EMERGENCY CONTACTS</p>
+                      <p className="text-xs text-gray-500">ALL CONTACTS NOTIFIED</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs text-green-400 font-bold">RECEIVED</p>
-                      <p className="text-xs text-gray-500">12:14</p>
+                      <p className="text-xs text-green-400 font-bold">SENT</p>
                     </div>
                   </div>
-
-                  <div className="flex items-center gap-3 pb-4 border-b border-gray-800">
-                    <div className="w-10 h-10 bg-gray-800 rounded flex items-center justify-center text-lg">👤</div>
-                    <div className="flex-1">
-                      <p className="text-xs font-bold">ELENA B.</p>
-                      <p className="text-xs text-gray-500">EMERGENCY CONTACT</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs text-blue-400 font-bold">DELIVERING</p>
-                      <p className="text-xs text-gray-500">12:15</p>
-                    </div>
-                  </div>
-
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-gray-800 rounded flex items-center justify-center text-lg">🎯</div>
                     <div className="flex-1">
-                      <p className="text-xs font-bold">LOCAL AUTHORITIES</p>
-                      <p className="text-xs text-gray-500">911 DISPATCH</p>
+                      <p className="text-xs font-bold">LOCATION BROADCAST</p>
+                      <p className="text-xs text-gray-500">GPS ACTIVE</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs text-yellow-400 font-bold">DISPATCHED</p>
-                      <p className="text-xs text-gray-500">12:14</p>
+                      <p className="text-xs text-yellow-400 font-bold">LIVE</p>
                     </div>
                   </div>
                 </div>
@@ -269,14 +251,16 @@ export default function SOSPage() {
           {/* Bottom Info & Buttons */}
           <div className="mt-12 space-y-8">
             <p className="text-xs text-gray-500 leading-relaxed max-w-3xl">
-              OBSIDIAN AEGIS PROTOCOL. All data, including audio and GPS tracking, is being encrypted and mirrored to three secure nodes. Local law enforcement has been provided with a temporary access token valid for 120 minutes.
+              OBSIDIAN AEGIS PROTOCOL. All data, including GPS tracking, is being encrypted and mirrored to secure nodes. Emergency contacts have been notified with your real-time location.
             </p>
-
             <div className="flex gap-6">
               <button className="flex-1 bg-gray-800 hover:bg-gray-700 text-white py-4 rounded-lg transition font-semibold tracking-widest text-sm">
                 SHARE STATUS LINK
               </button>
-              <button className="flex-1 bg-red-600 hover:bg-red-500 text-white py-4 rounded-lg transition font-semibold tracking-widest text-sm">
+              <button
+                onClick={handleCancel}
+                className="flex-1 bg-red-600 hover:bg-red-500 text-white py-4 rounded-lg transition font-semibold tracking-widest text-sm"
+              >
                 FALSE ALARM / CANCEL
               </button>
             </div>
