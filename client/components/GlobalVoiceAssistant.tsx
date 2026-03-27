@@ -276,7 +276,7 @@ export default function GlobalVoiceAssistant() {
           router.push('/sos');
           if (!response.text) responseText = 'Right away sir, triggering the SOS alert now.';
         } else if (call.name === 'trigger_fake_call') {
-          triggerFakeCall();
+          triggerFakeCall('Emergency', '+1-555-0000');
           router.push('/fake-call');
           if (!response.text) responseText = 'Ok boss, starting the fake call sequence.';
         } else if (call.name === 'call_contact') {
