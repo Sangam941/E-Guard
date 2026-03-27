@@ -32,8 +32,8 @@ export default function ContactsPage() {
         {/* Header */}
         <div className="mb-12">
           <p className="text-green-400 text-xs font-bold tracking-widest mb-4">● EMERGENCY CONTACT NETWORK</p>
-          <h1 className="text-7xl font-bold mb-2">Emergency</h1>
-          <h2 className="text-6xl font-bold text-white mb-6">Contacts</h2>
+          <h1 className="text-4xl font-bold mb-2 md:text-3xl sm:text-2xl">Emergency</h1>
+          <h2 className="text-3xl font-bold text-white mb-6 md:text-2xl sm:text-xl">Contacts</h2>
         </div>
 
         {/* SOS Status Banner */}

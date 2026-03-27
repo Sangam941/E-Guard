@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Shield, Zap, Mic, Phone, Lock, Settings, LogOut, Menu, X } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 
@@ -12,8 +12,9 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
-  const { isSOSActive } = useStore();
+  const { isSOSActive, logout } = useStore();
   const pathname = usePathname();
+  const router = useRouter();
 
   const navItems = [
     { icon: Zap, label: 'Dashboard', href: '/' },
@@ -141,9 +142,8 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
           })()}
           <button 
             onClick={() => {
-              // TODO: Implement logout functionality
-              console.log('Logout clicked');
-              // You can add logout logic here
+              logout();
+              router.push('/register');
             }}
             className="w-full flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-red-900/20 hover:text-red-300 rounded-lg transition-all duration-200 group hover:shadow-lg hover:shadow-red-900/30 hover:border hover:border-red-600/30"
           >
