@@ -14,7 +14,7 @@ export async function generateContent(prompt) {
                 contents: [
                     {
                         parts: [{ text: prompt }]
-                    }
+                    } 
                 ]
             })
         });
