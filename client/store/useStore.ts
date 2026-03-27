@@ -4,8 +4,6 @@ import * as contactsApi from '../api/contacts';
 import * as fakeCallApi from '../api/fakeCall';
 import * as uploadApi from '../api/upload';
 
-// We'll use a mock user ID for now since authentication isn't implemented
-const MOCK_USER_ID = 'mock-user-123';
 
 export interface Contact {
   _id?: string;
@@ -63,7 +61,6 @@ export const useStore = create<AppState>((set, get) => ({
       const { location, isSilentModeActive } = get();
       
       const res = await sosApi.triggerSOS({
-        userId: MOCK_USER_ID,
         latitude: location?.lat || 0,
         longitude: location?.lng || 0,
         address: address || '',
@@ -95,7 +92,6 @@ export const useStore = create<AppState>((set, get) => ({
     try {
       set({ isLoading: true, error: null });
       const res = await fakeCallApi.createFakeCall({
-        userId: MOCK_USER_ID,
         callerName,
         callerNumber,
       });
@@ -123,7 +119,7 @@ export const useStore = create<AppState>((set, get) => ({
   fetchContacts: async () => {
     try {
       set({ isLoading: true, error: null });
-      const res = await contactsApi.getContacts(MOCK_USER_ID);
+      const res = await contactsApi.getContacts();
       // Map _id to id for existing components
       const contacts = res.data.map((c: any) => ({
         ...c,
@@ -140,7 +136,6 @@ export const useStore = create<AppState>((set, get) => ({
     try {
       set({ isLoading: true, error: null });
       const payload = {
-        userId: MOCK_USER_ID,
         name: contact.name,
         phone: contact.phone,
         relationship: contact.relation || contact.relationship,
@@ -183,7 +178,6 @@ export const useStore = create<AppState>((set, get) => ({
       
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('userId', MOCK_USER_ID);
       formData.append('type', type);
       if (currentSOSId) {
         formData.append('sosId', currentSOSId);

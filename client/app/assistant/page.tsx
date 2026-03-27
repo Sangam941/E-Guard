@@ -13,8 +13,6 @@ interface Message {
   timestamp: Date;
 }
 
-const MOCK_USER_ID = 'mock-user-123';
-
 export default function ChatPage() {
   const { location } = useStore();
   const [chatId] = useState<string>(() => crypto.randomUUID());
@@ -52,7 +50,6 @@ export default function ChatPage() {
     try {
       const res = await sendChatMessage({
         chatId,
-        userId: MOCK_USER_ID,
         message: userInput,
         context: location ? { latitude: location.lat, longitude: location.lng } : undefined,
       });

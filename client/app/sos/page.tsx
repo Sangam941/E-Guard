@@ -12,15 +12,16 @@ export default function SOSPage() {
   const holdTimerRef = useRef<NodeJS.Timeout | null>(null);
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const triggeredRef = useRef(false);
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+
 
   // Get real GPS location
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition((position) => {
-        setLocation({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-        });
+        setLatitude(position.coords.latitude);
+        setLongitude(position.coords.longitude);
       });
     }
   }, [setLocation]);
@@ -238,10 +239,10 @@ export default function SOSPage() {
                 <h3 className="text-sm font-bold tracking-widest mb-6">MIC FEED - LIVE</h3>
                 <div className="flex items-center justify-center gap-1 h-16">
                   <div className="w-1.5 h-6 bg-green-400 rounded-full animate-pulse"></div>
-                  <div className="w-1.5 h-4 bg-green-400 rounded-full animate-pulse" style={{animationDelay: '0.1s'}}></div>
-                  <div className="w-1.5 h-8 bg-green-400 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
-                  <div className="w-1.5 h-5 bg-green-400 rounded-full animate-pulse" style={{animationDelay: '0.3s'}}></div>
-                  <div className="w-1.5 h-7 bg-green-400 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
+                  <div className="w-1.5 h-4 bg-green-400 rounded-full animate-pulse" style={{ animationDelay: '0.1s' }}></div>
+                  <div className="w-1.5 h-8 bg-green-400 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                  <div className="w-1.5 h-5 bg-green-400 rounded-full animate-pulse" style={{ animationDelay: '0.3s' }}></div>
+                  <div className="w-1.5 h-7 bg-green-400 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
                 </div>
                 <p className="text-xs text-gray-500 text-center mt-4 font-mono">RECORDING IN PROGRESS</p>
               </div>

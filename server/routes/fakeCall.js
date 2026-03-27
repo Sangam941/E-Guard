@@ -11,7 +11,7 @@ const router = express.Router();
 router.use(protect);
 
 router.post('/', createFakeCall);
-router.get('/user/:userId', getUserFakeCalls);
+router.get('/user', getUserFakeCalls);
 router.patch('/:id/stop', stopFakeCall);
 
 export default router;
