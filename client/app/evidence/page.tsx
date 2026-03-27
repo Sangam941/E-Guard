@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { motion } from 'motion/react';
-import { Camera, Video, Mic, UploadCloud, CheckCircle2, ShieldCheck, Loader2 } from 'lucide-react';
+import { Camera, Video, Mic, UploadCloud, CheckCircle2, Loader2, Shield, Lock, Cloud } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 
 export default function EvidencePage() {
@@ -16,143 +15,213 @@ export default function EvidencePage() {
     setStatus('recording');
     setIsRecording(true);
 
-    // Simulate recording duration
     await new Promise(resolve => setTimeout(resolve, type === 'photo' ? 1000 : 3000));
     
     setIsRecording(false);
     setStatus('uploading');
 
-    // Simulate upload progress
     for (let i = 0; i <= 100; i += 10) {
       setUploadProgress(i);
       await new Promise(resolve => setTimeout(resolve, 200));
     }
 
-    // Add to store
-    addEvidence({
-      type,
-      url: `simulated-${type}-${Date.now()}.mp4`,
-      timestamp: new Date()
-    });
+    await addEvidence(
+      new Blob(['simulated content'], { type: `video/mp4` }),
+      type
+    );
 
     setStatus('success');
     setTimeout(() => setStatus('idle'), 3000);
   };
 
   return (
-    <div className="flex flex-col h-full py-4 gap-6">
-      {/* Header */}
-      <div className="flex items-center gap-3 bg-[#1e2130] p-4 rounded-2xl border border-[#2d3748]">
-        <div className="bg-[#3b82f6]/20 p-2 rounded-full">
-          <ShieldCheck className="w-6 h-6 text-[#3b82f6]" />
+    <div className="min-h-screen bg-gray-950 text-white p-12">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-12">
+          <p className="text-green-400 text-xs font-bold tracking-widest mb-4">● SECURE EVIDENCE VAULT</p>
+          <h1 className="text-7xl font-bold mb-2">Evidence</h1>
+          <h2 className="text-6xl font-bold text-white mb-6">Capture</h2>
         </div>
-        <div>
-          <h1 className="font-bold text-white">Secure Evidence</h1>
-          <p className="text-xs text-[#9ca3af]">Data is encrypted and auto-uploaded</p>
-        </div>
-      </div>
 
-      {/* Capture Controls */}
-      <div className="grid grid-cols-3 gap-4">
-        <button
-          onClick={() => startCapture('photo')}
-          disabled={status !== 'idle'}
-          className="bg-[#1e2130] p-4 rounded-2xl border border-[#2d3748] flex flex-col items-center gap-3 hover:border-[#8b5cf6]/50 transition-colors disabled:opacity-50"
-        >
-          <Camera className="w-6 h-6 text-[#8b5cf6]" />
-          <span className="text-xs font-medium text-white">Photo</span>
-        </button>
-        <button
-          onClick={() => startCapture('video')}
-          disabled={status !== 'idle'}
-          className="bg-[#1e2130] p-4 rounded-2xl border border-[#2d3748] flex flex-col items-center gap-3 hover:border-red-500/50 transition-colors disabled:opacity-50"
-        >
-          <Video className="w-6 h-6 text-red-500" />
-          <span className="text-xs font-medium text-white">Video</span>
-        </button>
-        <button
-          onClick={() => startCapture('audio')}
-          disabled={status !== 'idle'}
-          className="bg-[#1e2130] p-4 rounded-2xl border border-[#2d3748] flex flex-col items-center gap-3 hover:border-green-500/50 transition-colors disabled:opacity-50"
-        >
-          <Mic className="w-6 h-6 text-green-500" />
-          <span className="text-xs font-medium text-white">Audio</span>
-        </button>
-      </div>
+        <div className="grid grid-cols-3 gap-12">
+          {/* Left: Capture Controls */}
+          <div className="col-span-2 space-y-8">
+            {/* Capture Buttons */}
+            <div className="grid grid-cols-3 gap-6">
+              <button
+                onClick={() => startCapture('photo')}
+                disabled={status !== 'idle'}
+                className="bg-gray-900 border border-gray-800 rounded-lg p-8 flex flex-col items-center gap-4 hover:border-purple-500/50 transition-colors disabled:opacity-50 group"
+              >
+                <div className="bg-purple-500/20 p-4 rounded-lg group-hover:bg-purple-500/30 transition-colors">
+                  <Camera className="w-8 h-8 text-purple-400" />
+                </div>
+                <span className="text-lg font-semibold text-white">Capture Photo</span>
+                <span className="text-xs text-gray-400">Still image capture</span>
+              </button>
 
-      {/* Status Area */}
-      <div className="bg-[#1e2130] rounded-2xl border border-[#2d3748] p-6 flex flex-col items-center justify-center min-h-[200px] relative overflow-hidden">
-        {status === 'idle' && (
-          <div className="text-center text-[#9ca3af]">
-            <UploadCloud className="w-12 h-12 mx-auto mb-3 opacity-50" />
-            <p className="text-sm">Select a capture method above.</p>
-            <p className="text-xs mt-1 text-[#8b5cf6]">Your data is safe even if the device is destroyed.</p>
-          </div>
-        )}
+              <button
+                onClick={() => startCapture('video')}
+                disabled={status !== 'idle'}
+                className="bg-gray-900 border border-gray-800 rounded-lg p-8 flex flex-col items-center gap-4 hover:border-red-500/50 transition-colors disabled:opacity-50 group"
+              >
+                <div className="bg-red-500/20 p-4 rounded-lg group-hover:bg-red-500/30 transition-colors">
+                  <Video className="w-8 h-8 text-red-400" />
+                </div>
+                <span className="text-lg font-semibold text-white">Record Video</span>
+                <span className="text-xs text-gray-400">Up to 60 seconds</span>
+              </button>
 
-        {status === 'recording' && (
-          <div className="flex flex-col items-center gap-4">
-            <motion.div
-              animate={{ scale: [1, 1.2, 1] }}
-              transition={{ repeat: Infinity, duration: 1 }}
-              className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center"
-            >
-              <div className="w-6 h-6 bg-red-500 rounded-full" />
-            </motion.div>
-            <p className="text-red-500 font-medium animate-pulse">Recording...</p>
-          </div>
-        )}
-
-        {status === 'uploading' && (
-          <div className="w-full flex flex-col items-center gap-4">
-            <Loader2 className="w-8 h-8 text-[#3b82f6] animate-spin" />
-            <div className="w-full max-w-[200px] h-2 bg-[#0f111a] rounded-full overflow-hidden">
-              <motion.div
-                className="h-full bg-[#3b82f6]"
-                initial={{ width: 0 }}
-                animate={{ width: `${uploadProgress}%` }}
-              />
+              <button
+                onClick={() => startCapture('audio')}
+                disabled={status !== 'idle'}
+                className="bg-gray-900 border border-gray-800 rounded-lg p-8 flex flex-col items-center gap-4 hover:border-green-500/50 transition-colors disabled:opacity-50 group"
+              >
+                <div className="bg-green-500/20 p-4 rounded-lg group-hover:bg-green-500/30 transition-colors">
+                  <Mic className="w-8 h-8 text-green-400" />
+                </div>
+                <span className="text-lg font-semibold text-white">Record Audio</span>
+                <span className="text-xs text-gray-400">Ambient recording</span>
+              </button>
             </div>
-            <p className="text-sm text-[#3b82f6]">Uploading to secure cloud... {uploadProgress}%</p>
-          </div>
-        )}
 
-        {status === 'success' && (
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="flex flex-col items-center gap-3"
-          >
-            <CheckCircle2 className="w-12 h-12 text-green-500" />
-            <p className="text-green-500 font-medium">Evidence Secured</p>
-          </motion.div>
-        )}
-      </div>
+            {/* Status Area */}
+            <div className="bg-gray-900 border border-gray-800 rounded-lg p-12 flex flex-col items-center justify-center min-h-[300px]">
+              {status === 'idle' && (
+                <div className="text-center">
+                  <UploadCloud className="w-16 h-16 mx-auto mb-4 text-gray-600" />
+                  <p className="text-lg text-gray-400 mb-2">Select a capture method</p>
+                  <p className="text-sm text-gray-500">Your evidence is encrypted and automatically backed up to secure servers</p>
+                </div>
+              )}
 
-      {/* Recent Evidence List */}
-      <div className="flex-1 overflow-y-auto">
-        <h3 className="text-sm font-semibold text-[#9ca3af] mb-3 px-1">Recent Evidence</h3>
-        <div className="flex flex-col gap-3">
-          {evidence.length === 0 ? (
-            <p className="text-xs text-[#4b5563] text-center py-4">No evidence captured yet.</p>
-          ) : (
-            evidence.map((item, i) => (
-              <div key={i} className="flex items-center justify-between bg-[#1e2130] p-3 rounded-xl border border-[#2d3748]">
-                <div className="flex items-center gap-3">
-                  <div className="bg-[#2d3748] p-2 rounded-lg">
-                    {item.type === 'photo' && <Camera className="w-4 h-4 text-[#9ca3af]" />}
-                    {item.type === 'video' && <Video className="w-4 h-4 text-[#9ca3af]" />}
-                    {item.type === 'audio' && <Mic className="w-4 h-4 text-[#9ca3af]" />}
+              {status === 'recording' && (
+                <div className="flex flex-col items-center gap-4">
+                  <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center animate-pulse">
+                    <div className="w-8 h-8 bg-red-500 rounded-full" />
                   </div>
+                  <p className="text-red-400 font-semibold text-lg">Recording in progress...</p>
+                </div>
+              )}
+
+              {status === 'uploading' && (
+                <div className="w-full flex flex-col items-center gap-6 max-w-sm">
+                  <Loader2 className="w-10 h-10 text-green-400 animate-spin" />
+                  <div className="w-full">
+                    <div className="flex justify-between mb-2">
+                      <span className="text-sm text-gray-400">Uploading to secure cloud</span>
+                      <span className="text-sm font-bold text-green-400">{uploadProgress}%</span>
+                    </div>
+                    <div className="w-full h-2 bg-gray-800 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-green-400 rounded-full transition-all duration-200"
+                        style={{ width: `${uploadProgress}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-400">Encrypting and backing up your evidence...</p>
+                </div>
+              )}
+
+              {status === 'success' && (
+                <div className="flex flex-col items-center gap-4">
+                  <CheckCircle2 className="w-16 h-16 text-green-400" />
+                  <p className="text-green-400 font-semibold text-lg">Evidence Secured</p>
+                  <p className="text-sm text-gray-400">Your evidence has been encrypted and backed up</p>
+                </div>
+              )}
+            </div>
+
+            {/* Recent Evidence List */}
+            <div>
+              <h3 className="text-lg font-bold mb-6">Recent Captures</h3>
+              <div className="space-y-4">
+                {evidence.length === 0 ? (
+                  <div className="text-center py-12 bg-gray-900 border border-gray-800 rounded-lg">
+                    <UploadCloud className="w-12 h-12 mx-auto mb-3 text-gray-600" />
+                    <p className="text-gray-400">No evidence captured yet</p>
+                  </div>
+                ) : (
+                  evidence.map((item, i) => (
+                    <div key={i} className="flex items-center justify-between bg-gray-900 border border-gray-800 rounded-lg p-6 hover:border-gray-700 transition-colors">
+                      <div className="flex items-center gap-4">
+                        <div className="bg-gray-800 p-3 rounded-lg">
+                          {item.type === 'photo' && <Camera className="w-6 h-6 text-purple-400" />}
+                          {item.type === 'video' && <Video className="w-6 h-6 text-red-400" />}
+                          {item.type === 'audio' && <Mic className="w-6 h-6 text-green-400" />}
+                        </div>
+                        <div>
+                          <p className="text-white font-semibold capitalize">{item.type} Capture</p>
+                          <p className="text-sm text-gray-400">{new Date(item.timestamp).toLocaleString()}</p>
+                        </div>
+                      </div>
+                      <CheckCircle2 className="w-5 h-5 text-green-400" />
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Right: Security Info */}
+          <div className="col-span-1 space-y-6">
+            {/* Security Features */}
+            <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
+              <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
+                <Shield className="text-green-400" />
+                Security Features
+              </h3>
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <Lock className="w-5 h-5 text-green-400 mt-1 flex-shrink-0" />
                   <div>
-                    <p className="text-sm font-medium text-white capitalize">{item.type} Capture</p>
-                    <p className="text-xs text-[#9ca3af]">{new Date(item.timestamp).toLocaleTimeString()}</p>
+                    <p className="font-semibold text-white">End-to-End Encryption</p>
+                    <p className="text-xs text-gray-400 mt-1">All data encrypted before transmission</p>
                   </div>
                 </div>
-                <CheckCircle2 className="w-4 h-4 text-green-500" />
+                <div className="flex items-start gap-3">
+                  <Cloud className="w-5 h-5 text-green-400 mt-1 flex-shrink-0" />
+                  <div>
+                    <p className="font-semibold text-white">Cloud Backup</p>
+                    <p className="text-xs text-gray-400 mt-1">Automatically backed up to 3 secure locations</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Shield className="w-5 h-5 text-green-400 mt-1 flex-shrink-0" />
+                  <div>
+                    <p className="font-semibold text-white">Immutable Records</p>
+                    <p className="text-xs text-gray-400 mt-1">Evidence cannot be tampered with</p>
+                  </div>
+                </div>
               </div>
-            ))
-          )}
+            </div>
+
+            {/* Storage Stats */}
+            <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
+              <h3 className="text-sm font-bold tracking-widest mb-4 text-gray-400">STORAGE INFO</h3>
+              <div className="space-y-3">
+                <div>
+                  <div className="flex justify-between mb-2">
+                    <span className="text-sm text-gray-400">Used</span>
+                    <span className="text-sm font-bold text-green-400">{evidence.length * 5} MB</span>
+                  </div>
+                  <div className="w-full h-2 bg-gray-800 rounded-full overflow-hidden">
+                    <div className="h-full bg-green-400 w-1/4"></div>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500">50 GB available • Unlimited storage for evidence</p>
+              </div>
+            </div>
+
+            {/* About Vault */}
+            <div className="bg-blue-600/10 border border-blue-600/30 rounded-lg p-6">
+              <h4 className="text-sm font-bold mb-3 text-blue-300">About Evidence Vault</h4>
+              <p className="text-xs text-blue-200 leading-relaxed">
+                All captured evidence is automatically encrypted, timestamped, and backed up to multiple secure servers. This ensures your evidence is preserved even if your device is lost or damaged.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </div>

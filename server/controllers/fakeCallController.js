@@ -1,6 +1,6 @@
-const FakeCall = require('../models/FakeCall');
+import FakeCall from '../models/FakeCall.js';
 
-exports.createFakeCall = async (req, res, next) => {
+export const createFakeCall = async (req, res, next) => {
   try {
     const { userId, callerId, callerName, voiceProfile, callTheme, delay } = req.body;
 
@@ -38,7 +38,7 @@ exports.createFakeCall = async (req, res, next) => {
   }
 };
 
-exports.stopFakeCall = async (req, res, next) => {
+export const stopFakeCall = async (req, res, next) => {
   try {
     const { id } = req.params;
     const fakeCall = await FakeCall.findByIdAndUpdate(id, { isActive: false }, { new: true });
@@ -60,7 +60,7 @@ exports.stopFakeCall = async (req, res, next) => {
   }
 };
 
-exports.getUserFakeCalls = async (req, res, next) => {
+export const getUserFakeCalls = async (req, res, next) => {
   try {
     const { userId } = req.params;
     const calls = await FakeCall.find({ userId }).sort({ timestamp: -1 });

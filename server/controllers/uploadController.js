@@ -1,7 +1,7 @@
-const cloudinary = require('../config/cloudinary');
-const SOS = require('../models/SOS');
+import cloudinary from '../config/cloudinary.js';
+import SOS from '../models/SOS.js';
 
-exports.uploadEvidence = async (req, res, next) => {
+export const uploadEvidence = async (req, res, next) => {
   try {
     const { sosId, type } = req.body; // type: 'audio' or 'video'
     const file = req.file;
@@ -48,7 +48,7 @@ exports.uploadEvidence = async (req, res, next) => {
   }
 };
 
-exports.getUploadProgress = (req, res) => {
+export const getUploadProgress = (req, res) => {
   // This is a placeholder for real-time upload progress
   res.json({
     success: true,

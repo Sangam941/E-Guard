@@ -15,11 +15,9 @@ export default function SilentModeManager() {
         const types: ('photo' | 'video' | 'audio')[] = ['photo', 'audio'];
         const randomType = types[Math.floor(Math.random() * types.length)];
         
-        addEvidence({
-          type: randomType,
-          url: `silent-${randomType}-${Date.now()}.mp4`,
-          timestamp: new Date(),
-        });
+        // Create a mock blob for silent evidence capture
+        const mockBlob = new Blob(['mock-data'], { type: 'application/octet-stream' });
+        addEvidence(mockBlob, randomType);
         
         // In a real app, this would also fetch location and upload to Cloudinary silently
       }, 15000);

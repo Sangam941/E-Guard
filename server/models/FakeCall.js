@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const fakeCallSchema = new mongoose.Schema({
   userId: {
@@ -18,4 +18,4 @@ const fakeCallSchema = new mongoose.Schema({
   },
 });
 
-module.exports = mongoose.model('FakeCall', fakeCallSchema);
+export default mongoose.model('FakeCall', fakeCallSchema);

@@ -1,10 +1,10 @@
-const Chat = require('../models/Chat');
-const { GoogleGenerativeAI } = require('google-generative-ai');
+import Chat from '../models/Chat.js';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const genai = new GoogleGenerativeAI(process.env.GOOGLE_GENAI_API_KEY);
 const model = genai.getGenerativeModel({ model: 'gemini-pro' });
 
-exports.sendMessage = async (req, res, next) => {
+export const sendMessage = async (req, res, next) => {
   try {
     const { userId, sosId, message } = req.body;
 
@@ -70,7 +70,7 @@ exports.sendMessage = async (req, res, next) => {
   }
 };
 
-exports.getChatHistory = async (req, res, next) => {
+export const getChatHistory = async (req, res, next) => {
   try {
     const { chatId } = req.params;
     const chat = await Chat.findById(chatId);
@@ -91,7 +91,7 @@ exports.getChatHistory = async (req, res, next) => {
   }
 };
 
-exports.getUserChats = async (req, res, next) => {
+export const getUserChats = async (req, res, next) => {
   try {
     const { userId } = req.params;
     const chats = await Chat.find({ userId }).sort({ updatedAt: -1 });
