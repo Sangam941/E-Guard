@@ -1,0 +1,9 @@
+{
+  "name": "Remix: E-Guard AI",
+  "description": "Intelligent Safety System: AI That Acts When You Can\u0027t",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ]
+}
