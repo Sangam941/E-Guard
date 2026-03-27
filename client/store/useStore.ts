@@ -4,8 +4,25 @@ import * as contactsApi from '../api/contacts';
 import * as fakeCallApi from '../api/fakeCall';
 import * as uploadApi from '../api/upload';
 
+// Check for existing auth on initialization
+const getInitialAuth = () => {
+  if (typeof window !== 'undefined') {
+    const auth = localStorage.getItem('auth');
+    if (auth) {
+      try {
+        return JSON.parse(auth);
+      } catch {
+        return null;
+      }
+    }
+  }
+  return null;
+};
+
+const initialUser = getInitialAuth();
+
 // We'll use a mock user ID for now since authentication isn't implemented
-const MOCK_USER_ID = 'mock-user-123';
+const MOCK_USER_ID = initialUser?.id || 'mock-user-123';
 
 export interface Contact {
   _id?: string;
@@ -18,6 +35,10 @@ export interface Contact {
 }
 
 interface AppState {
+  // Authentication
+  isAuthenticated: boolean;
+  user: { id: string; email: string; name: string } | null;
+  
   isSOSActive: boolean;
   currentSOSId: string | null;
   isSilentModeActive: boolean;
@@ -28,6 +49,11 @@ interface AppState {
   evidence: { type: 'photo' | 'video' | 'audio'; url: string; timestamp: Date }[];
   isLoading: boolean;
   error: string | null;
+  
+  // Authentication
+  login: (email: string, password: string) => Promise<void>;
+  register: (userData: { name: string; email: string; password: string }) => Promise<void>;
+  logout: () => void;
   
   activateSOS: (address?: string) => Promise<void>;
   deactivateSOS: () => Promise<void>;
@@ -46,6 +72,10 @@ interface AppState {
 }
 
 export const useStore = create<AppState>((set, get) => ({
+  // Authentication
+  isAuthenticated: !!initialUser,
+  user: initialUser,
+  
   isSOSActive: false,
   currentSOSId: null,
   isSilentModeActive: false,
@@ -204,5 +234,51 @@ export const useStore = create<AppState>((set, get) => ({
     } catch (error: any) {
       set({ error: error.message, isLoading: false });
     }
+  },
+
+  // Authentication methods
+  login: async (email: string, password: string) => {
+    try {
+      set({ isLoading: true, error: null });
+      // TODO: Replace with actual API call
+      // const res = await apiService.auth.login(email, password);
+      
+      // Mock login for now
+      if (email && password) {
+        const mockUser = { id: 'user-123', email, name: email.split('@')[0] };
+        set({ 
+          isAuthenticated: true, 
+          user: mockUser, 
+          isLoading: false 
+        });
+        // Store in localStorage for persistence
+        localStorage.setItem('auth', JSON.stringify(mockUser));
+      } else {
+        throw new Error('Invalid credentials');
+      }
+    } catch (error: any) {
+      set({ error: error.message, isLoading: false });
+      throw error;
+    }
+  },
+
+  register: async (userData: { name: string; email: string; password: string }) => {
+    try {
+      set({ isLoading: true, error: null });
+      // TODO: Replace with actual API call for registration only
+      // const res = await apiService.auth.register(userData);
+      
+      // Mock registration for now (just simulate success, don't auto-login)
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      set({ isLoading: false });
+    } catch (error: any) {
+      set({ error: error.message, isLoading: false });
+      throw error;
+    }
+  },
+
+  logout: () => {
+    set({ isAuthenticated: false, user: null });
+    localStorage.removeItem('auth');
   },
 }));
