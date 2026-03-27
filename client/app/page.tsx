@@ -13,13 +13,10 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // TODO: Get actual userId from authentication/context
-        const userId = 'user-123'; // Mock userId for now
-        
-        const sosData = await apiService.sos.getStatus(userId);
+        const sosData = await apiService.sos.getStatus();
         setSosStatus(sosData);
 
-        const contactsData = await apiService.contacts.getAll(userId);
+        const contactsData = await apiService.contacts.getAll();
         setContacts(contactsData.slice(0, 3));
       } catch (error) {
         console.error('Error fetching data:', error);

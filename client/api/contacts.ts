@@ -1,12 +1,12 @@
 import apiClient from './apiClient';
 
-export const createContact = async (data: { userId: string; name: string; phone: string; email?: string; relationship?: string; isPrimary?: boolean }) => {
+export const createContact = async (data: { name: string; phone: string; email?: string; relationship?: string; isPrimary?: boolean }) => {
   const response = await apiClient.post('/contacts', data);
   return response.data;
 };
 
-export const getContacts = async (userId: string) => {
-  const response = await apiClient.get(`/contacts/${userId}`);
+export const getContacts = async () => {
+  const response = await apiClient.get('/contacts/me');
   return response.data;
 };
 

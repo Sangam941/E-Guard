@@ -1,7 +1,7 @@
 import apiClient from './apiClient';
 
-export const getAlerts = async (userId: string) => {
-  const response = await apiClient.get(`/alerts/${userId}`);
+export const getAlerts = async () => {
+  const response = await apiClient.get('/alerts/');
   return response.data;
 };
 
@@ -15,7 +15,8 @@ export const markAsRead = async (id: string) => {
   return response.data;
 };
 
-export const markAllAsRead = async (userId: string) => {
-  const response = await apiClient.patch(`/alerts/user/${userId}/read-all`);
+export const markAllAsRead = async () => {
+  // Pass arbitrary string 'me' because backend expects /user/:userId/read-all but ignores the param
+  const response = await apiClient.patch('/alerts/user/me/read-all');
   return response.data;
 };
