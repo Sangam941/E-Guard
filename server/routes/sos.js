@@ -1,5 +1,5 @@
-const express = require('express');
-const sosController = require('../controllers/sosController');
+import express from 'express';
+import * as sosController from '../controllers/sosController.js';
 
 const router = express.Router();
 
@@ -8,4 +8,4 @@ router.get('/:id', sosController.getSOS);
 router.get('/user/:userId', sosController.getUserSOS);
 router.patch('/:id/status', sosController.updateSOSStatus);
 
-module.exports = router;
+export default router;

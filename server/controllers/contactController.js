@@ -1,6 +1,6 @@
-const Contact = require('../models/Contact');
+import Contact from '../models/Contact.js';
 
-exports.createContact = async (req, res, next) => {
+export const createContact = async (req, res, next) => {
   try {
     const { userId, name, phone, email, relationship, isPrimary } = req.body;
 
@@ -32,7 +32,7 @@ exports.createContact = async (req, res, next) => {
   }
 };
 
-exports.getContacts = async (req, res, next) => {
+export const getContacts = async (req, res, next) => {
   try {
     const { userId } = req.params;
     const contacts = await Contact.find({ userId });
@@ -46,7 +46,7 @@ exports.getContacts = async (req, res, next) => {
   }
 };
 
-exports.updateContact = async (req, res, next) => {
+export const updateContact = async (req, res, next) => {
   try {
     const { id } = req.params;
     const updates = req.body;
@@ -70,7 +70,7 @@ exports.updateContact = async (req, res, next) => {
   }
 };
 
-exports.deleteContact = async (req, res, next) => {
+export const deleteContact = async (req, res, next) => {
   try {
     const { id } = req.params;
     const contact = await Contact.findByIdAndDelete(id);

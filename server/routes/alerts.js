@@ -1,5 +1,5 @@
-const express = require('express');
-const alertController = require('../controllers/alertController');
+import express from 'express';
+import * as alertController from '../controllers/alertController.js';
 
 const router = express.Router();
 
@@ -8,4 +8,4 @@ router.get('/detail/:id', alertController.getAlertById);
 router.patch('/:id/read', alertController.markAsRead);
 router.patch('/user/:userId/read-all', alertController.markAllAsRead);
 
-module.exports = router;
+export default router;

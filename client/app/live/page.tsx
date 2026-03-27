@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { motion } from 'motion/react';
-import { Mic, MicOff, Video, Radio, Loader2, Globe, ShieldAlert } from 'lucide-react';
+import { Mic, MicOff, Video, Radio, Loader2, Globe, AlertCircle, Settings } from 'lucide-react';
 import { GoogleGenAI, Modality, LiveServerMessage } from '@google/genai';
 
 const LANGUAGES = [
@@ -39,7 +38,6 @@ export default function LiveAssistantPage() {
       setIsConnecting(true);
       setError(null);
 
-      // 1. Get Media Stream (Audio + Video)
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           sampleRate: 16000,
@@ -48,7 +46,7 @@ export default function LiveAssistantPage() {
           noiseSuppression: true,
         },
         video: {
-          facingMode: 'environment', // Prefer back camera for surroundings
+          facingMode: 'environment',
           width: { ideal: 640 },
           height: { ideal: 480 },
         }
@@ -59,7 +57,6 @@ export default function LiveAssistantPage() {
         videoRef.current.srcObject = stream;
       }
 
-      // 2. Setup Audio Capture (16kHz PCM)
       const audioCtx = new AudioContext({ sampleRate: 16000 });
       audioCtxRef.current = audioCtx;
       const source = audioCtx.createMediaStreamSource(stream);
@@ -69,14 +66,12 @@ export default function LiveAssistantPage() {
       source.connect(processor);
       processor.connect(audioCtx.destination);
 
-      // 3. Setup Audio Playback (24kHz PCM)
       const playbackCtx = new AudioContext({ sampleRate: 24000 });
       playbackCtxRef.current = playbackCtx;
       nextPlaybackTimeRef.current = playbackCtx.currentTime;
 
-      // Setup Analyser for Visualizer
       const analyser = playbackCtx.createAnalyser();
-      analyser.fftSize = 64; // 32 bins
+      analyser.fftSize = 64;
       analyser.smoothingTimeConstant = 0.8;
       analyser.connect(playbackCtx.destination);
       analyserRef.current = analyser;
@@ -98,7 +93,6 @@ export default function LiveAssistantPage() {
       };
       updateVisualizer();
 
-      // 4. Connect to Gemini Live API
       const ai = new GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY });
       
       const selectedLangName = LANGUAGES.find(l => l.code === language)?.name || 'English';
@@ -110,7 +104,6 @@ export default function LiveAssistantPage() {
             setIsConnected(true);
             setIsConnecting(false);
 
-            // Start sending audio
             processor.onaudioprocess = (e) => {
               const channelData = e.inputBuffer.getChannelData(0);
               const pcm16 = new Int16Array(channelData.length);
@@ -132,7 +125,6 @@ export default function LiveAssistantPage() {
               });
             };
 
-            // Start sending video frames (1 FPS)
             videoIntervalRef.current = setInterval(() => {
               if (!videoRef.current || !canvasRef.current) return;
               const ctx = canvasRef.current.getContext('2d');
@@ -150,7 +142,6 @@ export default function LiveAssistantPage() {
             }, 1000);
           },
           onmessage: async (message: LiveServerMessage) => {
-            // Handle Interruption
             if (message.serverContent?.interrupted) {
               activeSourcesRef.current.forEach(s => {
                 try { s.stop(); } catch (e) {}
@@ -161,7 +152,6 @@ export default function LiveAssistantPage() {
               }
             }
 
-            // Handle Audio Output
             const base64Audio = message.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
             if (base64Audio && playbackCtxRef.current) {
               const binary = atob(base64Audio);
@@ -256,118 +246,187 @@ export default function LiveAssistantPage() {
   }, []);
 
   return (
-    <div className="flex flex-col h-full py-4 gap-4">
-      {/* Header */}
-      <div className="flex items-center justify-between bg-[#1e2130] p-4 rounded-2xl border border-[#2d3748]">
-        <div className="flex items-center gap-3">
-          <div className="bg-[#8b5cf6]/20 p-2 rounded-full">
-            <Radio className="w-6 h-6 text-[#8b5cf6]" />
-          </div>
-          <div>
-            <h1 className="font-bold text-white">Live AI Vision</h1>
-            <p className="text-xs text-[#9ca3af]">Real-time voice & camera analysis</p>
-          </div>
+    <div className="min-h-screen bg-gray-950 text-white p-12">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-12">
+          <p className="text-green-400 text-xs font-bold tracking-widest mb-4">● LIVE AI VISION ACTIVE</p>
+          <h1 className="text-7xl font-bold mb-2">Live AI</h1>
+          <h2 className="text-6xl font-bold text-white mb-6">Vision</h2>
         </div>
-        
-        {/* Language Selector */}
-        <div className="flex items-center gap-2 bg-[#0f111a] border border-[#2d3748] rounded-xl px-3 py-1.5">
-          <Globe className="w-4 h-4 text-[#9ca3af]" />
-          <select 
-            value={language}
-            onChange={(e) => setLanguage(e.target.value)}
-            disabled={isConnected || isConnecting}
-            className="bg-transparent text-xs text-white focus:outline-none disabled:opacity-50 appearance-none"
-          >
-            {LANGUAGES.map(lang => (
-              <option key={lang.code} value={lang.code} className="bg-[#1e2130]">
-                {lang.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
 
-      {error && (
-        <div className="bg-red-500/10 border border-red-500/20 p-3 rounded-xl flex items-center gap-2 text-red-500 text-sm">
-          <ShieldAlert className="w-4 h-4 shrink-0" />
-          <p>{error}</p>
-        </div>
-      )}
-
-      {/* Camera Feed Area */}
-      <div className="flex-1 bg-[#1e2130] rounded-2xl border border-[#2d3748] overflow-hidden relative flex flex-col items-center justify-center">
-        <video 
-          ref={videoRef} 
-          autoPlay 
-          playsInline 
-          muted 
-          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${isConnected ? 'opacity-100' : 'opacity-0'}`}
-        />
-        <canvas ref={canvasRef} width={320} height={240} className="hidden" />
-        
-        {/* Overlay when not connected */}
-        {!isConnected && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#0f111a]/80 backdrop-blur-sm z-10 p-6 text-center">
-            <Video className="w-12 h-12 text-[#4b5563] mb-4" />
-            <h3 className="text-lg font-semibold text-white mb-2">Start Live Analysis</h3>
-            <p className="text-sm text-[#9ca3af] max-w-[250px]">
-              The AI will use your camera and microphone to understand your surroundings and speak with you in your selected language.
-            </p>
+        {error && (
+          <div className="bg-red-600/10 border border-red-600/30 rounded-lg p-6 mb-8 flex items-start gap-4">
+            <AlertCircle className="w-6 h-6 text-red-500 mt-1 flex-shrink-0" />
+            <div>
+              <h3 className="font-bold text-red-500 mb-1">Connection Error</h3>
+              <p className="text-gray-300">{error}</p>
+            </div>
           </div>
         )}
 
-        {/* Live Indicator Overlay */}
-        {isConnected && (
-          <div className="absolute top-4 right-4 bg-red-500/90 backdrop-blur-md px-3 py-1.5 rounded-full flex items-center gap-2 z-20 shadow-lg">
-            <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
-            <span className="text-xs font-bold text-white tracking-wider">LIVE</span>
-          </div>
-        )}
+        <div className="grid grid-cols-3 gap-12">
+          {/* Left: Video Feed */}
+          <div className="col-span-2">
+            <div className="relative bg-gray-900 border border-gray-800 rounded-lg overflow-hidden">
+              {/* Video Feed */}
+              <div className="relative h-96 bg-black">
+                <video 
+                  ref={videoRef} 
+                  autoPlay 
+                  playsInline 
+                  muted 
+                  className={`w-full h-full object-cover transition-opacity duration-500 ${isConnected ? 'opacity-100' : 'opacity-0'}`}
+                />
+                <canvas ref={canvasRef} width={320} height={240} className="hidden" />
+                
+                {/* Overlay when not connected */}
+                {!isConnected && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-gray-800 to-gray-900 z-10">
+                    <Video className="w-16 h-16 text-gray-600 mb-4" />
+                    <h3 className="text-2xl font-bold text-white mb-2">Ready for Live Analysis</h3>
+                    <p className="text-gray-400 text-center max-w-xs">
+                      Your camera and microphone will enable AI real-time safety guidance
+                    </p>
+                  </div>
+                )}
 
-        {/* Audio Visualizer Overlay */}
-        {isConnected && (
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-end gap-[3px] h-16 z-20">
-            {Array.from({ length: 32 }).map((_, i) => (
-              <div
-                key={i}
-                ref={(el) => { visualizerRefs.current[i] = el; }}
-                className="w-1.5 bg-[#8b5cf6] rounded-full transition-all duration-75 ease-out shadow-[0_0_10px_rgba(139,92,246,0.5)]"
-                style={{ height: '4%' }}
-              />
-            ))}
-          </div>
-        )}
-      </div>
+                {/* Live Indicator */}
+                {isConnected && (
+                  <div className="absolute top-6 right-6 bg-red-600/90 backdrop-blur-md px-4 py-2 rounded-full flex items-center gap-2 z-20 shadow-lg">
+                    <div className="w-2.5 h-2.5 rounded-full bg-white animate-pulse" />
+                    <span className="text-sm font-bold text-white tracking-widest">LIVE</span>
+                  </div>
+                )}
 
-      {/* Controls */}
-      <div className="flex justify-center">
-        {!isConnected ? (
-          <button
-            onClick={startLiveSession}
-            disabled={isConnecting}
-            className="w-full py-4 rounded-xl font-bold text-white bg-[#8b5cf6] hover:bg-[#7c3aed] transition-colors shadow-lg shadow-purple-500/20 flex items-center justify-center gap-2 disabled:opacity-70"
-          >
-            {isConnecting ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                Connecting...
-              </>
+                {/* Audio Visualizer */}
+                {isConnected && (
+                  <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-end gap-1 h-20 z-20 px-8">
+                    {Array.from({ length: 32 }).map((_, i) => (
+                      <div
+                        key={i}
+                        ref={(el) => { visualizerRefs.current[i] = el; }}
+                        className="flex-1 bg-green-400 rounded-full transition-all duration-75 ease-out shadow-[0_0_10px_rgba(34,197,94,0.5)]"
+                        style={{ height: '4%' }}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Video Info */}
+              <div className="bg-gray-800 border-t border-gray-700 p-6">
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <p className="text-xs text-gray-400 mb-1">RESOLUTION</p>
+                    <p className="font-semibold">1280×720</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-400 mb-1">FRAMERATE</p>
+                    <p className="font-semibold">{isConnected ? '30 FPS' : 'Standby'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-400 mb-1">CONNECTION</p>
+                    <p className={`font-semibold ${isConnected ? 'text-green-400' : 'text-gray-500'}`}>
+                      {isConnected ? 'Active' : 'Inactive'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right: Controls & Settings */}
+          <div className="col-span-1 space-y-6">
+            {/* Language Selection */}
+            <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
+              <h3 className="text-sm font-bold tracking-widest mb-4 flex items-center gap-2">
+                <Globe className="text-blue-400" />
+                Language
+              </h3>
+              <select 
+                value={language}
+                onChange={(e) => setLanguage(e.target.value)}
+                disabled={isConnected || isConnecting}
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {LANGUAGES.map(lang => (
+                  <option key={lang.code} value={lang.code}>
+                    {lang.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Session Status */}
+            <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
+              <h3 className="text-sm font-bold tracking-widest mb-4">SESSION STATUS</h3>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400">Status</span>
+                  <span className={`text-sm font-bold ${isConnected ? 'text-green-400' : 'text-gray-500'}`}>
+                    {isConnecting ? 'Connecting...' : isConnected ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400">Audio</span>
+                  <span className={`text-sm font-bold ${isConnected ? 'text-green-400' : 'text-gray-500'}`}>
+                    {isConnected ? 'Enabled' : 'Ready'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400">Video</span>
+                  <span className={`text-sm font-bold ${isConnected ? 'text-green-400' : 'text-gray-500'}`}>
+                    {isConnected ? 'Streaming' : 'Ready'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Button */}
+            {!isConnected ? (
+              <button
+                onClick={startLiveSession}
+                disabled={isConnecting}
+                className="w-full py-4 rounded-lg font-bold text-white bg-green-600 hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg shadow-green-600/20 flex items-center justify-center gap-2"
+              >
+                {isConnecting ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Connecting...
+                  </>
+                ) : (
+                  <>
+                    <Mic className="w-5 h-5" />
+                    Start Live Session
+                  </>
+                )}
+              </button>
             ) : (
-              <>
-                <Mic className="w-5 h-5" />
-                Start Voice & Vision
-              </>
+              <button
+                onClick={stopLiveSession}
+                className="w-full py-4 rounded-lg font-bold text-white bg-red-600 hover:bg-red-500 transition-colors shadow-lg shadow-red-600/20 flex items-center justify-center gap-2"
+              >
+                <MicOff className="w-5 h-5" />
+                End Session
+              </button>
             )}
-          </button>
-        ) : (
-          <button
-            onClick={stopLiveSession}
-            className="w-full py-4 rounded-xl font-bold text-white bg-red-500 hover:bg-red-600 transition-colors shadow-lg shadow-red-500/20 flex items-center justify-center gap-2"
-          >
-            <MicOff className="w-5 h-5" />
-            End Session
-          </button>
-        )}
+
+            {/* Features List */}
+            <div className="bg-blue-600/10 border border-blue-600/30 rounded-lg p-6">
+              <h4 className="text-sm font-bold mb-3 text-blue-300 flex items-center gap-2">
+                <Settings size={16} />
+                Live Features
+              </h4>
+              <ul className="space-y-2 text-xs text-blue-200">
+                <li>✓ Real-time video analysis</li>
+                <li>✓ AI safety guidance</li>
+                <li>✓ Multi-language support</li>
+                <li>✓ Audio transcription</li>
+              </ul>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

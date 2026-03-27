@@ -1,11 +1,11 @@
-const SOS = require('../models/SOS');
-const Alert = require('../models/Alert');
-const Contact = require('../models/Contact');
-const { GoogleGenerativeAI } = require('google-generative-ai');
+import SOS from '../models/SOS.js';
+import Alert from '../models/Alert.js';
+import Contact from '../models/Contact.js';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const genai = new GoogleGenerativeAI(process.env.GOOGLE_GENAI_API_KEY);
 
-exports.triggerSOS = async (req, res, next) => {
+export const triggerSOS = async (req, res, next) => {
   try {
     const { userId, latitude, longitude, address, silentMode } = req.body;
 
@@ -69,7 +69,7 @@ exports.triggerSOS = async (req, res, next) => {
   }
 };
 
-exports.getSOS = async (req, res, next) => {
+export const getSOS = async (req, res, next) => {
   try {
     const { id } = req.params;
     const sos = await SOS.findById(id);
@@ -90,7 +90,7 @@ exports.getSOS = async (req, res, next) => {
   }
 };
 
-exports.getUserSOS = async (req, res, next) => {
+export const getUserSOS = async (req, res, next) => {
   try {
     const { userId } = req.params;
     const sosList = await SOS.find({ userId }).sort({ timestamp: -1 });
@@ -104,7 +104,7 @@ exports.getUserSOS = async (req, res, next) => {
   }
 };
 
-exports.updateSOSStatus = async (req, res, next) => {
+export const updateSOSStatus = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { status } = req.body;

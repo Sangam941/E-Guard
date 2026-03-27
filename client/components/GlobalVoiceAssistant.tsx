@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Mic, Loader2, Bot, Volume2, Power } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -24,6 +24,149 @@ export default function GlobalVoiceAssistant() {
   useEffect(() => {
     statusRef.current = status;
   }, [status]);
+
+  const speak = useCallback((text: string, onEnd?: () => void) => {
+    if (!window.speechSynthesis) {
+      if (onEnd) onEnd();
+      return;
+    }
+    
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    
+    const voices = window.speechSynthesis.getVoices();
+    const voice = voices.find(v => v.name.includes('Male') || v.name.includes('Google UK English Male')) || voices[0];
+    if (voice) utterance.voice = voice;
+    
+    utterance.onstart = () => {
+      statusRef.current = 'speaking';
+      setStatus('speaking');
+    };
+    utterance.onend = () => {
+      if (onEnd) {
+        onEnd();
+      } else {
+        statusRef.current = 'listening';
+        setStatus('listening');
+        setTranscript('');
+        try { recognitionRef.current?.start(); } catch(e){}
+      }
+    };
+    utterance.onerror = () => {
+      if (onEnd) onEnd();
+      else {
+        statusRef.current = 'listening';
+        setStatus('listening');
+        try { recognitionRef.current?.start(); } catch(e){}
+      }
+    };
+    
+    window.speechSynthesis.speak(utterance);
+  }, []);
+
+  const processCommand = useCallback(async (command: string) => {
+    statusRef.current = 'processing';
+    setStatus('processing');
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY });
+      const contactNames = contacts.map(c => `${c.name} (${c.relation || 'No relation'})`).join(', ');
+      
+      const response = await ai.models.generateContent({
+        model: 'gemini-3-flash-preview',
+        contents: `User command: "${command}"\nAvailable contacts: ${contactNames}`,
+        config: {
+          systemInstruction: 'You are E-Guard, an AI safety assistant. The user has given a command or asked a question. Call the appropriate tool if they want to navigate, trigger SOS, start a fake call, or call a real contact. If they ask a general question or need advice, answer it helpfully and concisely. Respond naturally, occasionally using "boss" or "sir". Do not use markdown.',
+          tools: [{
+            functionDeclarations: [
+              {
+                name: 'navigate',
+                description: 'Navigate to a specific page',
+                parameters: {
+                  type: Type.OBJECT,
+                  properties: {
+                    destination: { type: Type.STRING, enum: ['home', 'assistant', 'live', 'evidence', 'contacts', 'fake-call'] }
+                  },
+                  required: ['destination']
+                }
+              },
+              {
+                name: 'trigger_sos',
+                description: 'Trigger the emergency SOS alert',
+              },
+              {
+                name: 'trigger_fake_call',
+                description: 'Trigger a fake incoming phone call',
+              },
+              {
+                name: 'call_contact',
+                description: 'Initiate a real phone call to a saved emergency contact',
+                parameters: {
+                  type: Type.OBJECT,
+                  properties: {
+                    contact_name: { type: Type.STRING, description: 'The name of the contact to call (e.g., Mom, Dad)' }
+                  },
+                  required: ['contact_name']
+                }
+              }
+            ]
+          }],
+          temperature: 0.1,
+        }
+      });
+
+      const call = response.functionCalls?.[0];
+      let responseText = response.text || 'Ok boss, task completed.';
+
+      if (call) {
+        if (call.name === 'navigate') {
+          const dest = (call.args as any).destination;
+          const routeMap: Record<string, string> = {
+            'home': '/',
+            'assistant': '/assistant',
+            'live': '/live',
+            'evidence': '/evidence',
+            'contacts': '/contacts',
+            'fake-call': '/fake-call'
+          };
+          if (routeMap[dest]) {
+            router.push(routeMap[dest]);
+            if (!response.text) responseText = `Ok boss, I have redirected you to the ${dest} page.`;
+          }
+        } else if (call.name === 'trigger_sos') {
+          activateSOS();
+          router.push('/sos');
+          if (!response.text) responseText = 'Right away sir, triggering the SOS alert now.';
+        } else if (call.name === 'trigger_fake_call') {
+          triggerFakeCall('Emergency', '+1-555-0000');
+          router.push('/fake-call');
+          if (!response.text) responseText = 'Ok boss, starting the fake call sequence.';
+        } else if (call.name === 'call_contact') {
+          const contactName = (call.args as any).contact_name;
+          const contact = contacts.find(c => 
+            c.name.toLowerCase().includes(contactName.toLowerCase()) || 
+            contactName.toLowerCase().includes(c.name.toLowerCase())
+          );
+          
+          if (contact) {
+            if (!response.text) responseText = `Calling ${contact.name} now, boss.`;
+            window.location.href = `tel:${contact.phone}`;
+          } else {
+            responseText = `Sorry boss, I couldn't find a contact named ${contactName}.`;
+          }
+        }
+      }
+
+      statusRef.current = 'speaking';
+      setStatus('speaking');
+      speak(responseText);
+      
+    } catch (error) {
+      console.error('Error processing command:', error instanceof Error ? error.message : String(error));
+      statusRef.current = 'speaking';
+      setStatus('speaking');
+      speak("Sorry boss, I encountered an error processing that command.");
+    }
+  }, [router, activateSOS, triggerFakeCall, contacts, speak]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -128,48 +271,9 @@ export default function GlobalVoiceAssistant() {
     return () => {
       if (recognitionRef.current) recognitionRef.current.stop();
     };
-  }, [isActive]);
+  }, [isActive, processCommand, speak]);
 
-  const speak = (text: string, onEnd?: () => void) => {
-    if (!window.speechSynthesis) {
-      if (onEnd) onEnd();
-      return;
-    }
-    
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    
-    const voices = window.speechSynthesis.getVoices();
-    const voice = voices.find(v => v.name.includes('Male') || v.name.includes('Google UK English Male')) || voices[0];
-    if (voice) utterance.voice = voice;
-    
-    utterance.onstart = () => {
-      statusRef.current = 'speaking';
-      setStatus('speaking');
-    };
-    utterance.onend = () => {
-      if (onEnd) {
-        onEnd();
-      } else {
-        statusRef.current = 'listening';
-        setStatus('listening');
-        setTranscript('');
-        try { recognitionRef.current?.start(); } catch(e){}
-      }
-    };
-    utterance.onerror = () => {
-      if (onEnd) onEnd();
-      else {
-        statusRef.current = 'listening';
-        setStatus('listening');
-        try { recognitionRef.current?.start(); } catch(e){}
-      }
-    };
-    
-    window.speechSynthesis.speak(utterance);
-  };
-
-  const toggleActive = () => {
+  const toggleActive = useCallback(() => {
     if (isActive) {
       if (status === 'listening') {
         // Manual wake fallback if wake word detection is failing
@@ -201,111 +305,7 @@ export default function GlobalVoiceAssistant() {
       setTranscript('');
       // useEffect will handle starting the recognition
     }
-  };
-
-  const processCommand = async (command: string) => {
-    statusRef.current = 'processing';
-    setStatus('processing');
-    try {
-      const ai = new GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY });
-      const contactNames = contacts.map(c => `${c.name} (${c.relation || 'No relation'})`).join(', ');
-      
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: `User command: "${command}"\nAvailable contacts: ${contactNames}`,
-        config: {
-          systemInstruction: 'You are E-Guard, an AI safety assistant. The user has given a command or asked a question. Call the appropriate tool if they want to navigate, trigger SOS, start a fake call, or call a real contact. If they ask a general question or need advice, answer it helpfully and concisely. Respond naturally, occasionally using "boss" or "sir". Do not use markdown.',
-          tools: [{
-            functionDeclarations: [
-              {
-                name: 'navigate',
-                description: 'Navigate to a specific page',
-                parameters: {
-                  type: Type.OBJECT,
-                  properties: {
-                    destination: { type: Type.STRING, enum: ['home', 'assistant', 'live', 'evidence', 'contacts', 'fake-call'] }
-                  },
-                  required: ['destination']
-                }
-              },
-              {
-                name: 'trigger_sos',
-                description: 'Trigger the emergency SOS alert',
-              },
-              {
-                name: 'trigger_fake_call',
-                description: 'Trigger a fake incoming phone call',
-              },
-              {
-                name: 'call_contact',
-                description: 'Initiate a real phone call to a saved emergency contact',
-                parameters: {
-                  type: Type.OBJECT,
-                  properties: {
-                    contact_name: { type: Type.STRING, description: 'The name of the contact to call (e.g., Mom, Dad)' }
-                  },
-                  required: ['contact_name']
-                }
-              }
-            ]
-          }],
-          temperature: 0.1,
-        }
-      });
-
-      const call = response.functionCalls?.[0];
-      let responseText = response.text || 'Ok boss, task completed.';
-
-      if (call) {
-        if (call.name === 'navigate') {
-          const dest = (call.args as any).destination;
-          const routeMap: Record<string, string> = {
-            'home': '/',
-            'assistant': '/assistant',
-            'live': '/live',
-            'evidence': '/evidence',
-            'contacts': '/contacts',
-            'fake-call': '/fake-call'
-          };
-          if (routeMap[dest]) {
-            router.push(routeMap[dest]);
-            if (!response.text) responseText = `Ok boss, I have redirected you to the ${dest} page.`;
-          }
-        } else if (call.name === 'trigger_sos') {
-          activateSOS();
-          router.push('/sos');
-          if (!response.text) responseText = 'Right away sir, triggering the SOS alert now.';
-        } else if (call.name === 'trigger_fake_call') {
-          triggerFakeCall();
-          router.push('/fake-call');
-          if (!response.text) responseText = 'Ok boss, starting the fake call sequence.';
-        } else if (call.name === 'call_contact') {
-          const contactName = (call.args as any).contact_name;
-          const contact = contacts.find(c => 
-            c.name.toLowerCase().includes(contactName.toLowerCase()) || 
-            contactName.toLowerCase().includes(c.name.toLowerCase())
-          );
-          
-          if (contact) {
-            if (!response.text) responseText = `Calling ${contact.name} now, boss.`;
-            window.location.href = `tel:${contact.phone}`;
-          } else {
-            responseText = `Sorry boss, I couldn't find a contact named ${contactName}.`;
-          }
-        }
-      }
-
-      statusRef.current = 'speaking';
-      setStatus('speaking');
-      speak(responseText);
-      
-    } catch (error) {
-      console.error('Error processing command:', error instanceof Error ? error.message : String(error));
-      statusRef.current = 'speaking';
-      setStatus('speaking');
-      speak("Sorry boss, I encountered an error processing that command.");
-    }
-  };
+  }, [isActive, status, speak]);
 
   return (
     <div className="fixed bottom-24 right-4 z-[100] flex flex-col items-end gap-4">
