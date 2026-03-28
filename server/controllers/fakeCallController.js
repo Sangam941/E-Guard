@@ -13,15 +13,12 @@ export const createFakeCall = asyncHandler(async (req, res) => {
     res.status(400).json({ success: false, message: 'callerName, are required' });
     return;
   }
-  if (callerNumber) {
+  if (!callerNumber) {
     res.status(400).json({ success: false, message: 'callerNumber are required' });
     return;
   }
   const fakeCall = await FakeCall.create({
     userId, callerName, callerNumber,
-    delaySeconds: delaySeconds ?? 5,
-    scheduleTime,
-    duration: duration ?? 0,
     status: 'pending',
   });
   res.status(201).json({ success: true, data: fakeCall });
