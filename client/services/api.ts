@@ -1,8 +1,5 @@
 import {
   triggerSOS,
-  getSOS,
-  getUserSOS,
-  updateSOSStatus,
 } from '@/api/sos';
 import {
   createContact,
@@ -16,9 +13,6 @@ import apiClient from '@/api/apiClient';
 export const apiService = {
   sos: {
     trigger: triggerSOS,
-    get: getSOS,
-    getStatus: getUserSOS,
-    updateStatus: updateSOSStatus,
   },
   contacts: {
     create: createContact,
@@ -29,7 +23,7 @@ export const apiService = {
 };
 
 // Also export individual functions for direct imports
-export { triggerSOS, getSOS, getUserSOS, updateSOSStatus } from '@/api/sos';
+export { triggerSOS} from '@/api/sos';
 export { createContact, getContacts, updateContact, deleteContact } from '@/api/contacts';
 export * from '@/api/chat';
 export * from '@/api/alerts';
