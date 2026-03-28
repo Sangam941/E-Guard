@@ -56,7 +56,7 @@ interface AppState {
   logout: () => void;
   
   activateSOS: (address?: string) => Promise<void>;
-  deactivateSOS: () => Promise<void>;
+  // deactivateSOS: () => Promise<void>;
   toggleSilentMode: () => void;
   triggerFakeCall: (callerName: string, callerNumber: string) => Promise<void>;
   endFakeCall: () => Promise<void>;
@@ -94,9 +94,7 @@ export const useStore = create<AppState>((set, get) => ({
       
       const res = await sosApi.triggerSOS({
         latitude: location?.lat || 0,
-        longitude: location?.lng || 0,
-        address: address || '',
-        silentMode: isSilentModeActive
+        longitude: location?.lng || 0
       });
       
       set({ isSOSActive: true, currentSOSId: res.data._id, isLoading: false });
@@ -105,18 +103,18 @@ export const useStore = create<AppState>((set, get) => ({
     }
   },
 
-  deactivateSOS: async () => {
-    try {
-      const { currentSOSId } = get();
-      if (currentSOSId) {
-        await sosApi.updateSOSStatus(currentSOSId, 'resolved');
-      }
-      set({ isSOSActive: false, currentSOSId: null });
-    } catch (error: any) {
-      set({ error: error.message });
-      set({ isSOSActive: false }); // force deactivate
-    }
-  },
+  // deactivateSOS: async () => {
+  //   try {
+  //     const { currentSOSId } = get();
+  //     if (currentSOSId) {
+  //       await sosApi.updateSOSStatus(currentSOSId, 'resolved');
+  //     }
+  //     set({ isSOSActive: false, currentSOSId: null });
+  //   } catch (error: any) {
+  //     set({ error: error.message });
+  //     set({ isSOSActive: false }); // force deactivate
+  //   }
+  // },
 
   toggleSilentMode: () => set((state) => ({ isSilentModeActive: !state.isSilentModeActive })),
 
