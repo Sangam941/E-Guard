@@ -122,12 +122,12 @@ export default function GlobalVoiceAssistant() {
           const dest = (call.args as any).destination;
           const routeMap: Record<string, string> = {
             'home': '/',
-            'assistant': '/assistant',
+            'assistantgit': '/assistant',
             'live': '/live',
             'evidence': '/evidence',
             'contacts': '/contacts',
             'fake-call': '/fake-call'
-          };
+          }; 
           if (routeMap[dest]) {
             router.push(routeMap[dest]);
             if (!response.text) responseText = `Ok boss, I have redirected you to the ${dest} page.`;
