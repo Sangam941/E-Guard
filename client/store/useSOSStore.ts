@@ -8,7 +8,7 @@ export interface SOS {
   userId: string;
 }
 
-import { triggerSOS, getSOS, getUserSOS, updateSOSStatus, getFirstSOS } from '@/api/sos';
+import { triggerSOS, getFirstSOS } from '@/api/sos';
 
 interface SOSState {
   sos: SOS | null;
