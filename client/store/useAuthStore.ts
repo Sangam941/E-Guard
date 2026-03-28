@@ -33,7 +33,9 @@ export const useAuthStore = create<AuthStoreState>()(
                 try {
                     const data = await loginUser(email, password);
                     const authUser = {
-                        ...data.user,
+                      email: data.email,
+                      name: data.name,
+                      token: data.token
                     };
 
                     set({
