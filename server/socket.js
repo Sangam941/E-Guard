@@ -8,13 +8,13 @@ const activeUsers = new Map();
 export const initSocket = (server) => {
   io = new Server(server, {
     cors: {
-      origin: ['http://localhost:3000', 'http://localhost:3001', 'http://127.0.0.1:3000'],
+      origin: ['http://localhost:3000', 'http://localhost:3001', 'http://127.0.0.1:3000', 'https://e-guard-pokm-git-main-malang-code-innovators.vercel.app'],
       methods: ['GET', 'POST']
     }
   });
 
   io.on('connection', (socket) => {
-    console.log('Socket client connected:', socket.id);
+    console.log('Socket client connected:', socket.id); 
 
     // 1. REAL-TIME LOCATION STREAM
     socket.on('updateLocation', (data) => {
