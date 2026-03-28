@@ -55,8 +55,8 @@ interface AppState {
   register: (userData: { name: string; email: string; password: string }) => Promise<void>;
   logout: () => void;
   
-  activateSOS: (address?: string) => Promise<void>;
-  deactivateSOS: () => Promise<void>;
+  // activateSOS: (address?: string) => Promise<void>;
+  // deactivateSOS: () => Promise<void>;
   toggleSilentMode: () => void;
   triggerFakeCall: (callerName: string, callerNumber: string) => Promise<void>;
   endFakeCall: () => Promise<void>;
@@ -87,47 +87,42 @@ export const useStore = create<AppState>((set, get) => ({
   isLoading: false,
   error: null,
 
-  activateSOS: async (address?: string) => {
-    try {
-      set({ isLoading: true, error: null });
-      const { location, isSilentModeActive } = get();
+  // activateSOS: async () => {
+  //   try {
+  //     set({ isLoading: true, error: null });
+  //     const { location } = get();
       
-      const res = await sosApi.triggerSOS({
-        latitude: location?.lat || 0,
-        longitude: location?.lng || 0,
-        address: address || '',
-        silentMode: isSilentModeActive
-      });
+  //     const res = await sosApi.triggerSOS({
+  //       latitude: location?.lat || 0,
+  //       longitude: location?.lng || 0
+  //     });
       
-      set({ isSOSActive: true, currentSOSId: res.data._id, isLoading: false });
-    } catch (error: any) {
-      set({ error: error.message, isLoading: false, isSOSActive: true }); // keep true for UI optimism
-    }
-  },
+  //     set({ isSOSActive: true, currentSOSId: res.data._id, isLoading: false });
+  //   } catch (error: any) {
+  //     set({ error: error.message, isLoading: false, isSOSActive: true }); // keep true for UI optimism
+  //   }
+  // },
 
-  deactivateSOS: async () => {
-    try {
-      const { currentSOSId } = get();
-      if (currentSOSId) {
-        await sosApi.updateSOSStatus(currentSOSId, 'resolved');
-      }
-      set({ isSOSActive: false, currentSOSId: null });
-    } catch (error: any) {
-      set({ error: error.message });
-      set({ isSOSActive: false }); // force deactivate
-    }
-  },
+  // deactivateSOS: async () => {
+  //   try {
+  //     const { currentSOSId } = get();
+  //     if (currentSOSId) {
+  //       await sosApi.updateSOSStatus(currentSOSId, 'resolved');
+  //     }
+  //     set({ isSOSActive: false, currentSOSId: null });
+  //   } catch (error: any) {
+  //     set({ error: error.message });
+  //     set({ isSOSActive: false }); // force deactivate
+  //   }
+  // },
 
   toggleSilentMode: () => set((state) => ({ isSilentModeActive: !state.isSilentModeActive })),
 
   triggerFakeCall: async (callerName: string = 'Mom', callerNumber: string = '+1234567890') => {
     try {
       set({ isLoading: true, error: null });
-      const res = await fakeCallApi.createFakeCall({
-        callerName,
-        callerNumber,
-      });
-      set({ isFakeCallActive: true, currentFakeCallId: res.data._id, isLoading: false });
+      const res = await fakeCallApi.createFakeCall(callerName, callerNumber);
+      set({ isFakeCallActive: true, currentFakeCallId: res._id || res.id, isLoading: false });
     } catch (error: any) {
       set({ error: error.message, isLoading: false, isFakeCallActive: true });
     }

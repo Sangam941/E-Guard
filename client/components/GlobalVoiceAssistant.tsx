@@ -15,7 +15,7 @@ export default function GlobalVoiceAssistant() {
   const [transcript, setTranscript] = useState('');
   
   const router = useRouter();
-  const { activateSOS, triggerFakeCall, contacts } = useStore();
+  const { triggerFakeCall, contacts } = useStore();
   
   const recognitionRef = useRef<any>(null);
   const statusRef = useRef<AssistantStatus>('listening');
@@ -133,7 +133,6 @@ export default function GlobalVoiceAssistant() {
             if (!response.text) responseText = `Ok boss, I have redirected you to the ${dest} page.`;
           }
         } else if (call.name === 'trigger_sos') {
-          activateSOS();
           router.push('/sos');
           if (!response.text) responseText = 'Right away sir, triggering the SOS alert now.';
         } else if (call.name === 'trigger_fake_call') {
@@ -166,7 +165,7 @@ export default function GlobalVoiceAssistant() {
       setStatus('speaking');
       speak("Sorry boss, I encountered an error processing that command.");
     }
-  }, [router, activateSOS, triggerFakeCall, contacts, speak]);
+  }, [router, triggerFakeCall, contacts, speak]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
