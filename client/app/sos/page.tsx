@@ -4,11 +4,14 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Shield } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/store/useStore';
-import { triggerSOS } from '@/api/sos';
+import { triggerSOS as apiTriggerSOS } from '@/api/sos';
 import { useSOSStore } from '@/store/useSOSStore';
+import { useAuthStore } from '@/store/useAuthStore';
+import { socket } from '@/lib/socket';
 
 export default function SOSPage() {
   const { createSOS } = useSOSStore()
+  const { user } = useAuthStore()
   const router = useRouter();
   const { activateSOS } = useStore();
   const [sosTriggered, setSOSTriggered] = useState(false);
@@ -59,9 +62,17 @@ export default function SOSPage() {
   useEffect(() => {
     if (sosTriggered) {
       createSOS(location.lat, location.lng);
+      
+      const userId = (user && ((user as any)._id || (user as any).email)) || 'anonymous-' + Math.random().toString(36).substring(7);
+      socket.emit('triggerSOS', {
+        userId,
+        latitude: location.lat,
+        longitude: location.lng
+      });
+      
       router.push('/sos/details');
     }
-  }, [sosTriggered, activateSOS, router]);
+  }, [sosTriggered, activateSOS, router, location, user]);
 
   return (
     <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center p-8">

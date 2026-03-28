@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import http from 'http';
+import { initSocket } from './socket.js';
 import connectDB from './config/database.js';
 
 import authRoutes from './routes/auth.js';
@@ -51,6 +53,9 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+const server = http.createServer(app);
+initSocket(server);
+
+server.listen(PORT, () => {
   console.log(`E-Guard server running on port ${PORT}`);
 });
