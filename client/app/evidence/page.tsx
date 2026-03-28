@@ -1,37 +1,207 @@
 'use client';
 
-import { useState, useRef } from 'react';
-import { Camera, Video, Mic, UploadCloud, CheckCircle2, Loader2, Shield, Lock, Cloud } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { Camera, Video, Mic, UploadCloud, CheckCircle2, Loader2, Shield, Lock, Cloud, X } from 'lucide-react';
 import { useStore } from '@/store/useStore';
+
+interface MediaConstraints {
+  audio?: boolean | MediaTrackConstraints;
+  video?: boolean | MediaTrackConstraints;
+}
 
 export default function EvidencePage() {
   const [isRecording, setIsRecording] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [status, setStatus] = useState<'idle' | 'recording' | 'uploading' | 'success'>('idle');
+  const [showCamera, setShowCamera] = useState(false);
+  const [cameraType, setCameraType] = useState<'photo' | 'video' | 'audio' | null>(null);
+  const [recordingTime, setRecordingTime] = useState(0);
   const { addEvidence, evidence } = useStore();
+  
   const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Cleanup stream on unmount
+  useEffect(() => {
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, []);
+
+  // Timer for recording
+  useEffect(() => {
+    if (!isRecording) return;
+
+    timerRef.current = setInterval(() => {
+      setRecordingTime(prev => {
+        const newTime = prev + 1;
+        if (cameraType === 'photo' && newTime >= 3) {
+          // Stop photo recording after 3 seconds
+          if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+            mediaRecorderRef.current.stop();
+          }
+          return newTime;
+        }
+        if ((cameraType === 'video' || cameraType === 'audio') && newTime >= 60) {
+          // Stop video/audio recording after 60 seconds
+          if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+            mediaRecorderRef.current.stop();
+          }
+          return newTime;
+        }
+        return newTime;
+      });
+    }, 1000);
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [isRecording, cameraType]);
+
+  const uploadToCloudinary = async (blob: Blob, type: 'photo' | 'video' | 'audio'): Promise<string> => {
+    const formData = new FormData();
+    formData.append('file', blob);
+    formData.append('upload_preset', 'e_guard_evidence');
+
+    try {
+      const response = await fetch('https://api.cloudinary.com/v1_1/your_cloud_name/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        // Fallback to local storage if Cloudinary fails
+        console.warn('Cloudinary upload failed, using local storage');
+        return URL.createObjectURL(blob);
+      }
+
+      const data = await response.json();
+      return data.secure_url;
+    } catch (error) {
+      console.error('Upload error:', error);
+      return URL.createObjectURL(blob);
+    }
+  };
 
   const startCapture = async (type: 'photo' | 'video' | 'audio') => {
-    setStatus('recording');
-    setIsRecording(true);
+    try {
+      setCameraType(type);
+      setShowCamera(true);
+      const constraints: MediaConstraints = {
+        audio: type === 'audio' || type === 'video',
+        video: type === 'photo' || type === 'video',
+      };
 
-    await new Promise(resolve => setTimeout(resolve, type === 'photo' ? 1000 : 3000));
-    
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      streamRef.current = stream;
+
+      if (videoRef.current && (type === 'photo' || type === 'video')) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play();
+      }
+
+      if (type === 'audio') {
+        const mediaRecorder = new MediaRecorder(stream);
+        mediaRecorderRef.current = mediaRecorder;
+        chunksRef.current = [];
+
+        mediaRecorder.ondataavailable = (e) => {
+          chunksRef.current.push(e.data);
+        };
+
+        mediaRecorder.onstop = () => {
+          const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+          uploadEvidence(blob, 'audio');
+        };
+
+        mediaRecorder.start();
+        setIsRecording(true);
+        setStatus('recording');
+        setRecordingTime(0);
+      } else if (type === 'photo') {
+        setIsRecording(true);
+        setStatus('recording');
+        setRecordingTime(0);
+      } else if (type === 'video') {
+        const mediaRecorder = new MediaRecorder(stream);
+        mediaRecorderRef.current = mediaRecorder;
+        chunksRef.current = [];
+
+        mediaRecorder.ondataavailable = (e) => {
+          chunksRef.current.push(e.data);
+        };
+
+        mediaRecorder.onstop = () => {
+          const blob = new Blob(chunksRef.current, { type: 'video/webm' });
+          uploadEvidence(blob, 'video');
+        };
+
+        mediaRecorder.start();
+        setIsRecording(true);
+        setStatus('recording');
+        setRecordingTime(0);
+      }
+    } catch (error) {
+      console.error('Camera access error:', error);
+      alert('Unable to access camera or microphone. Please check permissions.');
+      setShowCamera(false);
+    }
+  };
+
+  const stopRecording = async (type: 'photo' | 'video' | 'audio') => {
     setIsRecording(false);
-    setStatus('uploading');
 
-    for (let i = 0; i <= 100; i += 10) {
-      setUploadProgress(i);
-      await new Promise(resolve => setTimeout(resolve, 200));
+    if (type === 'photo' && videoRef.current && canvasRef.current) {
+      const context = canvasRef.current.getContext('2d');
+      if (context && videoRef.current.videoWidth) {
+        canvasRef.current.width = videoRef.current.videoWidth;
+        canvasRef.current.height = videoRef.current.videoHeight;
+        context.drawImage(videoRef.current, 0, 0);
+        canvasRef.current.toBlob((blob) => {
+          if (blob) uploadEvidence(blob, 'photo');
+        }, 'image/jpeg', 0.95);
+      }
+    } else if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.stop();
     }
 
-    await addEvidence(
-      new Blob(['simulated content'], { type: `video/mp4` }),
-      type
-    );
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+    }
+    if (timerRef.current) clearInterval(timerRef.current);
+  };
 
-    setStatus('success');
-    setTimeout(() => setStatus('idle'), 3000);
+  const uploadEvidence = async (blob: Blob, type: 'photo' | 'video' | 'audio') => {
+    setStatus('uploading');
+    setUploadProgress(0);
+
+    try {
+      // Simulate upload progress
+      for (let i = 0; i <= 100; i += 10) {
+        setUploadProgress(i);
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
+      // Upload to Cloudinary (optional - blob can be sent directly to backend)
+      // const url = await uploadToCloudinary(blob, type);
+      
+      await addEvidence(blob, type);
+      setStatus('success');
+      setShowCamera(false);
+      setCameraType(null);
+      setTimeout(() => setStatus('idle'), 3000);
+    } catch (error) {
+      console.error('Upload error:', error);
+      alert('Failed to upload evidence');
+      setStatus('idle');
+    }
   };
 
   return (
@@ -40,8 +210,8 @@ export default function EvidencePage() {
         {/* Header */}
         <div className="mb-6 sm:mb-12">
           <p className="text-green-400 text-xs font-bold tracking-widest mb-2 sm:mb-4">● SECURE EVIDENCE VAULT</p>
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-1 sm:mb-2">Evidence</h1>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 sm:mb-6">Capture</h2>
+          <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-1 sm:mb-2">Evidence</h1>
+          <h2 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 sm:mb-6">Capture</h2>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-12">
@@ -58,7 +228,7 @@ export default function EvidencePage() {
                   <Camera className="w-5 sm:w-6 md:w-8 h-5 sm:h-6 md:h-8 text-purple-400" />
                 </div>
                 <span className="text-sm sm:text-base md:text-lg font-semibold text-white">Capture Photo</span>
-                <span className="text-xs text-gray-400">Still image capture</span>
+                <span className="text-xs text-gray-400">Instant snapshot</span>
               </button>
 
               <button
@@ -224,6 +394,119 @@ export default function EvidencePage() {
           </div>
         </div>
       </div>
+
+      {/* Camera Modal */}
+      {showCamera && (
+        <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-2xl bg-gray-900 rounded-xl overflow-hidden border border-gray-800">
+            {/* Close Button */}
+            <div className="flex justify-between items-center p-4 border-b border-gray-800">
+              <h3 className="text-lg sm:text-xl font-bold capitalize">
+                {cameraType === 'photo' && '📷 Capture Photo'}
+                {cameraType === 'video' && '🎥 Record Video'}
+                {cameraType === 'audio' && '🎤 Record Audio'}
+              </h3>
+              <button
+                onClick={() => {
+                  if (streamRef.current) {
+                    streamRef.current.getTracks().forEach(track => track.stop());
+                  }
+                  if (timerRef.current) clearInterval(timerRef.current);
+                  setShowCamera(false);
+                  setCameraType(null);
+                  setIsRecording(false);
+                  setRecordingTime(0);
+                }}
+                className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            {/* Camera Feed or Recording */}
+            <div className="bg-black aspect-video flex items-center justify-center relative">
+              {(cameraType === 'photo' || cameraType === 'video') ? (
+                <>
+                  <video
+                    ref={videoRef}
+                    className="w-full h-full object-cover"
+                    playsInline
+                  />
+                  <canvas ref={canvasRef} className="hidden" />
+                </>
+              ) : (
+                <div className="flex flex-col items-center justify-center gap-4">
+                  <div className={`w-20 h-20 rounded-full border-4 flex items-center justify-center ${isRecording ? 'border-red-500 bg-red-500/20' : 'border-gray-600 bg-gray-900'}`}>
+                    <Mic size={40} className={isRecording ? 'text-red-400' : 'text-gray-400'} />
+                  </div>
+                  <p className="text-gray-300 text-center">Audio Recording Active</p>
+                </div>
+              )}
+
+              {/* Recording Indicator */}
+              {isRecording && (
+                <div className="absolute top-4 right-4 flex items-center gap-2 bg-red-500/20 px-4 py-2 rounded-full border border-red-500/50">
+                  <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                  <span className="text-red-400 font-semibold text-sm">
+                    {recordingTime}s {cameraType === 'photo' ? '/3s' : cameraType === 'audio' || cameraType === 'video' ? '/60s' : ''}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Controls */}
+            <div className="p-4 sm:p-6 border-t border-gray-800 flex gap-3 sm:gap-4 justify-center">
+              {!isRecording ? (
+                <>
+                  <button
+                    onClick={() => {
+                      if (streamRef.current) {
+                        streamRef.current.getTracks().forEach(track => track.stop());
+                      }
+                      setShowCamera(false);
+                      setCameraType(null);
+                    }}
+                    className="px-6 sm:px-8 py-2 sm:py-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors text-sm sm:text-base font-semibold"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (cameraType === 'photo') {
+                        setRecordingTime(3);
+                        setTimeout(() => stopRecording('photo'), 3000);
+                      }
+                      if (cameraType === 'video') {
+                        stopRecording('video');
+                      }
+                      if (cameraType === 'audio') {
+                        stopRecording('audio');
+                      }
+                    }}
+                    className={`px-6 sm:px-8 py-2 sm:py-3 rounded-lg transition-colors text-sm sm:text-base font-semibold text-white ${
+                      cameraType === 'photo'
+                        ? 'bg-purple-600 hover:bg-purple-700'
+                        : cameraType === 'video'
+                        ? 'bg-red-600 hover:bg-red-700'
+                        : 'bg-green-600 hover:bg-green-700'
+                    }`}
+                  >
+                    {cameraType === 'photo' ? 'Capture' : 'Start Recording'}
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => stopRecording(cameraType!)}
+                  className="px-6 sm:px-8 py-2 sm:py-3 bg-red-600 hover:bg-red-700 rounded-lg transition-colors text-sm sm:text-base font-semibold text-white flex items-center gap-2"
+                >
+                  <div className="w-2 h-2 bg-red-300 rounded-full animate-pulse" />
+                  Stop Recording
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
