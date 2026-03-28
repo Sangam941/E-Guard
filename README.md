@@ -13,7 +13,7 @@
 ### 🎯 Mission
 To empower individuals with technology that enhances their personal safety through intelligent detection, secure documentation, and rapid response coordination.
 
----
+--- 
 
 ## ✨ Core Features
 
