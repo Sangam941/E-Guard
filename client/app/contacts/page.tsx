@@ -27,18 +27,18 @@ export default function ContactsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white p-12">
+    <div className="min-h-screen bg-gray-950 text-white p-4 sm:p-8 md:p-12">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-12">
-          <p className="text-green-400 text-xs font-bold tracking-widest mb-4">● EMERGENCY CONTACT NETWORK</p>
-          <h1 className="text-4xl font-bold mb-2 md:text-3xl sm:text-2xl">Emergency</h1>
-          <h2 className="text-3xl font-bold text-white mb-6 md:text-2xl sm:text-xl">Contacts</h2>
+        <div className="mb-6 sm:mb-12">
+          <p className="text-green-400 text-xs font-bold tracking-widest mb-2 sm:mb-4">● EMERGENCY CONTACT NETWORK</p>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-1 sm:mb-2">Emergency</h1>
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 sm:mb-6">Contacts</h2>
         </div>
 
         {/* SOS Status Banner */}
         {isSOSActive && (
-          <div className="bg-red-600/10 border border-red-600/30 rounded-lg p-6 mb-12 flex items-start gap-4">
+          <div className="bg-red-600/10 border border-red-600/30 rounded-lg p-4 sm:p-6 mb-6 sm:mb-12 flex items-start gap-3 sm:gap-4">
             <ShieldAlert className="w-6 h-6 text-red-500 mt-1 flex-shrink-0" />
             <div>
               <h3 className="text-lg font-bold text-red-500 mb-1">Alert Active</h3>
@@ -47,9 +47,9 @@ export default function ContactsPage() {
           </div>
         )}
 
-        <div className="grid grid-cols-3 gap-12">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-12">
           {/* Left: Contact List */}
-          <div className="col-span-2">
+          <div className="col-span-1 lg:col-span-2">
             <div className="flex items-center justify-between mb-8">
               <h3 className="text-lg font-bold flex items-center gap-3">
                 <Users className="text-green-400" />
@@ -66,9 +66,9 @@ export default function ContactsPage() {
 
             {/* Add Contact Form */}
             {isAdding && (
-              <form onSubmit={handleAdd} className="bg-gray-900 border border-gray-800 rounded-lg p-8 mb-8">
+              <form onSubmit={handleAdd} className="bg-gray-900 border border-gray-800 rounded-lg p-6 sm:p-8 mb-6 sm:mb-8">
                 <h4 className="text-lg font-bold mb-6">Add New Emergency Contact</h4>
-                <div className="grid grid-cols-2 gap-6 mb-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
                   <input
                     type="text"
                     placeholder="Full Name"
@@ -112,9 +112,9 @@ export default function ContactsPage() {
             )}
 
             {/* Contact List */}
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {contacts.map((contact) => (
-                <div key={contact.id} className="bg-gray-900 border border-gray-800 rounded-lg p-6 hover:border-gray-700 transition-colors">
+                <div key={contact.id} className="bg-gray-900 border border-gray-800 rounded-lg p-4 sm:p-6 hover:border-gray-700 transition-colors">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 bg-gradient-to-br from-green-500/30 to-green-600/30 rounded-lg flex items-center justify-center border border-green-500/30">

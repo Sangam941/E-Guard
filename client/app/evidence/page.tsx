@@ -35,27 +35,27 @@ export default function EvidencePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white p-12">
+    <div className="min-h-screen bg-gray-950 text-white p-4 sm:p-8 md:p-12">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-12">
-          <p className="text-green-400 text-xs font-bold tracking-widest mb-4">● SECURE EVIDENCE VAULT</p>
-          <h1 className="text-7xl font-bold mb-2">Evidence</h1>
-          <h2 className="text-6xl font-bold text-white mb-6">Capture</h2>
+        <div className="mb-6 sm:mb-12">
+          <p className="text-green-400 text-xs font-bold tracking-widest mb-2 sm:mb-4">● SECURE EVIDENCE VAULT</p>
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-1 sm:mb-2">Evidence</h1>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 sm:mb-6">Capture</h2>
         </div>
 
-        <div className="grid grid-cols-3 gap-12">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-12">
           {/* Left: Capture Controls */}
-          <div className="col-span-2 space-y-8">
+          <div className="col-span-1 lg:col-span-2 space-y-6 sm:space-y-8">
             {/* Capture Buttons */}
-            <div className="grid grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
               <button
                 onClick={() => startCapture('photo')}
                 disabled={status !== 'idle'}
-                className="bg-gray-900 border border-gray-800 rounded-lg p-8 flex flex-col items-center gap-4 hover:border-purple-500/50 transition-colors disabled:opacity-50 group"
+                className="bg-gray-900 border border-gray-800 rounded-lg p-6 sm:p-8 flex flex-col items-center gap-3 sm:gap-4 hover:border-purple-500/50 transition-colors disabled:opacity-50 group"
               >
-                <div className="bg-purple-500/20 p-4 rounded-lg group-hover:bg-purple-500/30 transition-colors">
-                  <Camera className="w-8 h-8 text-purple-400" />
+                <div className="bg-purple-500/20 p-3 sm:p-4 rounded-lg group-hover:bg-purple-500/30 transition-colors">
+                  <Camera className="w-6 sm:w-8 h-6 sm:h-8 text-purple-400" />
                 </div>
                 <span className="text-lg font-semibold text-white">Capture Photo</span>
                 <span className="text-xs text-gray-400">Still image capture</span>

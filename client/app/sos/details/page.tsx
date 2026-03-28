@@ -41,14 +41,14 @@ export default function SOSDetailsPage() {
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">
-      <div className="p-12">
+      <div className="p-4 sm:p-8 md:p-12">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
-          <div className="flex items-start justify-between mb-12">
+          <div className="flex items-start justify-between mb-6 sm:mb-12 flex-col sm:flex-row gap-4 sm:gap-0">
             <div>
-              <p className="text-green-400 text-xs font-bold tracking-widest mb-4">● CRITICAL EVENT LIVE</p>
-              <h1 className="text-7xl font-bold mb-2">ALERT</h1>
-              <h2 className="text-6xl font-bold text-white">SENT</h2>
+              <p className="text-green-400 text-xs font-bold tracking-widest mb-2 sm:mb-4">● CRITICAL EVENT LIVE</p>
+              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-1 sm:mb-2">ALERT</h1>
+              <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white">SENT</h2>
             </div>
             <div className="space-y-4 text-right text-sm">
               <div className="flex items-center justify-end gap-3">
@@ -65,11 +65,11 @@ export default function SOSDetailsPage() {
           </div>
 
           {/* Main Content Grid */}
-          <div className="grid grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
             {/* Left: Map */}
-            <div className="col-span-2">
-              <div className="bg-gray-900 border border-gray-800 rounded-lg p-8">
-                <div className="relative h-96 bg-gray-900 rounded overflow-hidden mb-6">
+            <div className="col-span-1 lg:col-span-2">
+              <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 sm:p-8">
+                <div className="relative h-56 sm:h-80 md:h-96 bg-gray-900 rounded overflow-hidden mb-4 sm:mb-6">
                   {sos?.latitude && sos.longitude ? (
                     <MapView lat={sos.latitude} lng={sos.longitude} />
                   ) : null}
@@ -81,15 +81,15 @@ export default function SOSDetailsPage() {
                 </div>
 
                 {/* Coordinates */}
-                <div className="p-4 bg-gray-800 rounded border border-gray-700">
-                  <p className="text-xs text-gray-400 mb-2">GPS COORDINATES</p>
-                  <p className="text-base font-mono text-green-400 font-bold">{sos?.latitude?.toFixed(4) || '0.0000'}° N, {Math.abs(sos?.longitude || 0).toFixed(4)}° W</p>
+                <div className="p-3 sm:p-4 bg-gray-800 rounded border border-gray-700">
+                  <p className="text-xs text-gray-400 mb-1 sm:mb-2">GPS COORDINATES</p>
+                  <p className="text-xs sm:text-sm font-mono text-green-400 font-bold break-all">{sos?.latitude?.toFixed(4) || '0.0000'}° N, {Math.abs(sos?.longitude || 0).toFixed(4)}° W</p>
                 </div>
               </div>
             </div>
 
             {/* Right: Contacts & Status */}
-            <div className="col-span-1 space-y-6">
+            <div className="col-span-1 space-y-4 sm:space-y-6">
               {/* Notified Contacts */}
               <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
                 <h3 className="text-sm font-bold tracking-widest mb-6">

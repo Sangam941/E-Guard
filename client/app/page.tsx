@@ -29,23 +29,23 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white p-12">
+    <div className="min-h-screen bg-gray-950 text-white p-4 sm:p-8 md:p-12">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-12">
-          <p className="text-green-400 text-xs font-bold tracking-widest mb-4">● INTELLIGENT SAFETY SYSTEM</p>
-          <h1 className="text-7xl font-bold mb-2">When</h1>
-          <h2 className="text-6xl font-bold text-green-400 mb-6">You Can&apos;t</h2>
-          <p className="text-gray-300 text-lg max-w-2xl">
+        <div className="mb-8 sm:mb-12">
+          <p className="text-green-400 text-xs font-bold tracking-widest mb-2 sm:mb-4">● INTELLIGENT SAFETY SYSTEM</p>
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-2">When</h1>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-green-400 mb-4 sm:mb-6">You Can&apos;t</h2>
+          <p className="text-gray-300 text-sm sm:text-base md:text-lg max-w-2xl">
             Continuous biological monitoring and spatial threat detection. Your digital guardian never sleeps.
           </p>
         </div>
 
         {/* Main Grid */}
-        <div className="grid grid-cols-3 gap-8 mb-12">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 mb-8 sm:mb-12">
           {/* Left: Hero Section */}
-          <div className="col-span-2">
-            <div className="bg-gradient-to-br from-green-600/10 to-green-600/5 border border-green-600/30 rounded-lg p-12">
+          <div className="col-span-1 lg:col-span-2">
+            <div className="bg-gradient-to-br from-green-600/10 to-green-600/5 border border-green-600/30 rounded-lg p-6 sm:p-8 md:p-12">
               <div className="flex items-center gap-4 mb-8">
                 <div className="w-16 h-16 bg-green-600/20 rounded-lg flex items-center justify-center border border-green-600/50">
                   <Shield className="w-8 h-8 text-green-400" />
@@ -106,8 +106,8 @@ export default function Dashboard() {
         </div>
 
         {/* System Metrics Grid */}
-        <div className="grid grid-cols-5 gap-6 mb-12">
-          <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6 mb-8 sm:mb-12">
+          <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 sm:p-6">
             <p className="text-xs text-gray-400 mb-3">AUDIO CAPTURE</p>
             <p className="text-2xl font-bold text-green-400">ENCRYPTED</p>
             <p className="text-xs text-gray-600 mt-2">SECURE</p>
@@ -135,9 +135,9 @@ export default function Dashboard() {
         </div>
 
         {/* Bottom Section */}
-        <div className="grid grid-cols-2 gap-12 mb-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-12 mb-8 sm:mb-12">
           {/* Emergency Contacts */}
-          <div className="bg-gray-900 border border-gray-800 rounded-lg p-8">
+          <div className="bg-gray-900 border border-gray-800 rounded-lg p-6 sm:p-8">
             <h3 className="text-lg font-bold mb-6">EMERGENCY CONTACTS</h3>
             <div className="space-y-4">
               {contacts.length > 0 ? (
@@ -185,8 +185,8 @@ export default function Dashboard() {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-2 gap-8">
-          <Link href="/live" className="bg-gray-900 border border-gray-800 rounded-lg p-8 hover:border-green-600/50 transition-colors group">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8">
+          <Link href="/live" className="bg-gray-900 border border-gray-800 rounded-lg p-6 sm:p-8 hover:border-green-600/50 transition-colors group">
             <div className="flex items-start justify-between">
               <div className="bg-green-600/10 p-3 rounded-lg border border-green-600/30 group-hover:bg-green-600/20 transition-colors">
                 <MessageSquare className="w-6 h-6 text-green-400" />
@@ -196,7 +196,7 @@ export default function Dashboard() {
             <p className="text-gray-400 text-sm">Real-time voice & camera analysis with multi-language support</p>
           </Link>
 
-          <Link href="/fake-call" className="bg-gray-900 border border-gray-800 rounded-lg p-8 hover:border-blue-600/50 transition-colors group">
+          <Link href="/fake-call" className="bg-gray-900 border border-gray-800 rounded-lg p-6 sm:p-8 hover:border-blue-600/50 transition-colors group">
             <div className="flex items-start justify-between">
               <div className="bg-blue-600/10 p-3 rounded-lg border border-blue-600/30 group-hover:bg-blue-600/20 transition-colors">
                 <PhoneCall className="w-6 h-6 text-blue-400" />
