@@ -70,7 +70,7 @@ export default function FakeCallPage() {
   // Configuration Screen
   if (!isFakeCallActive) {
     return (
-      <div className="min-h-screen bg-gray-950 text-white p-12 relative">
+      <div className="min-h-screen bg-gray-950 text-white p-4 sm:p-8 md:p-12 relative">
         {/* Modal Overlay */}
         {isModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -134,15 +134,14 @@ export default function FakeCallPage() {
           {/* Header */}
           <div className="mb-12">
             <p className="text-blue-400 text-xs font-bold tracking-widest mb-4">● ESCALATION PROTOCOL</p>
-            <h1 className="text-7xl font-bold mb-2">Fake</h1>
-            <h2 className="text-6xl font-bold text-white mb-6">Call</h2>
+            <h1 className="text-7xl font-bold mb-2">Fake Call</h1>
           </div>
 
           {/* Main Grid */}
-          <div className="grid grid-cols-2 gap-12">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-12">
             {/* Left: Saved Callers List */}
             <div>
-              <div className="bg-gray-900 border border-gray-800 rounded-lg p-8 mb-8">
+              <div className="bg-gray-900 border border-gray-800 rounded-lg p-6 sm:p-8 mb-6 sm:mb-8">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-lg font-bold text-white flex items-center gap-2">
                     <PhoneCall className="text-blue-400" />

@@ -246,7 +246,7 @@ export default function LiveAssistantPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white p-12">
+    <div className="min-h-screen bg-gray-950 text-white p-4 sm:p-8 md:p-12">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-12">
