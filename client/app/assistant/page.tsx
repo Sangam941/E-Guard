@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Send, ArrowLeft, Shield, Sparkles, User, Bot } from 'lucide-react';
+import { Send, ArrowLeft, Shield, Sparkles, User, Bot, AlertCircle, MessageSquare, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { GoogleGenAI } from "@google/genai";
 import ReactMarkdown from 'react-markdown';
@@ -16,6 +16,12 @@ interface Message {
   sender: 'user' | 'ai';
   timestamp: Date;
 }
+
+const QUICK_SUGGESTIONS = [
+  { icon: AlertCircle, text: 'Safety Tips' },
+  { icon: Zap, text: 'Emergency Guide' },
+  { icon: MessageSquare, text: 'Ask Something' },
+];
 
 export default function AIChat() {
   const [messages, setMessages] = useState<Message[]>([
@@ -36,26 +42,27 @@ export default function AIChat() {
     }
   }, [messages]);
 
-  const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
+  const handleSend = async (customInput?: string) => {
+    const messageText = customInput || input;
+    if (!messageText.trim() || isLoading) return;
 
     const userMsg: Message = {
       id: Date.now().toString(),
-      text: input,
+      text: messageText,
       sender: 'user',
       timestamp: new Date(),
     };
 
     setMessages((prev) => [...prev, userMsg]);
-    setInput('');
+    if (!customInput) setInput('');
     setIsLoading(true);
 
     try {
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
-        contents: input,
+        contents: messageText,
         config: {
-          systemInstruction: "You are E-Guard AI, a safety assistant. Provide short, actionable safety guidance in a calm and professional tone. If the user is in immediate danger, advise them to use the SOS button or call emergency services.",
+          systemInstruction: "You are E-Guard AI, a safety assistant. Provide short, actionable safety guidance in a calm and professional tone. If the user is in immediate danger, advise them to use the SOS button or call emergency services. Keep responses concise and helpful.",
         },
       });
 
@@ -69,104 +76,203 @@ export default function AIChat() {
       setMessages((prev) => [...prev, aiMsg]);
     } catch (error) {
       console.error("AI Error:", error);
+      const errorMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        text: "I encountered an error. Please try again or use the SOS button if you need immediate help.",
+        sender: 'ai',
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMsg]);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="flex flex-col h-[100dvh] overflow-hidden bg-background text-text">
-      {/* Header */}
-      <header className="p-4 border-b border-white/10 flex items-center gap-4 glass-card">
-        <Link href="/" className="p-2 hover:bg-white/5 rounded-full">
-          <ArrowLeft size={24} />
-        </Link>
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-            <Shield size={20} className="text-primary" />
-          </div>
-          <div>
-            <h1 className="font-bold">Safety Assistant</h1>
-            <div className="flex items-center gap-1 text-[10px] text-green-500 uppercase font-bold tracking-wider">
-              <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
+    <div className="flex flex-col h-full overflow-hidden bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950">
+      {/* Enhanced Header */}
+      <header className="px-4 pt-4 pb-6 border-b border-white/5 backdrop-blur-xl bg-white/5">
+        <div className="flex items-center justify-between mb-4">
+          <Link href="/" className="p-2 hover:bg-white/10 rounded-full transition-colors duration-200">
+            <ArrowLeft size={24} className="text-white/70" />
+          </Link>
+          <div className="text-right">
+            <div className="flex items-center justify-end gap-1.5 text-[10px] text-emerald-400 uppercase font-bold tracking-wider">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-lg shadow-emerald-400/50"></div>
               AI Online
             </div>
           </div>
         </div>
+        
+        <div className="flex items-center gap-3">
+          <motion.div 
+            className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/30"
+            animate={{ scale: [1, 1.05, 1] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
+            <Shield size={24} className="text-white" />
+          </motion.div>
+          <div>
+            <h1 className="font-bold text-lg text-white">Safety Assistant</h1>
+            <p className="text-xs text-white/50 mt-0.5">Always here to help</p>
+          </div>
+        </div>
       </header>
 
-      {/* Messages */}
+      {/* Messages Container */}
       <div 
         ref={scrollRef}
-        className="flex-1 overflow-y-auto p-4 space-y-6 scroll-smooth"
+        className="flex-1 overflow-y-auto px-4 pt-6 pb-4 space-y-4 scroll-smooth"
       >
-        {messages.map((msg) => (
+        {messages.map((msg, idx) => (
           <motion.div
             key={msg.id}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.3, delay: idx * 0.05 }}
             className={cn(
-              "flex gap-3 max-w-[85%]",
-              msg.sender === 'user' ? "ml-auto flex-row-reverse" : "mr-auto"
+              "flex gap-3",
+              msg.sender === 'user' ? "justify-end" : "justify-start"
             )}
           >
+            {msg.sender === 'ai' && (
+              <motion.div 
+                className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/30"
+                animate={{ y: [0, -2, 0] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                <Bot size={18} className="text-white" />
+              </motion.div>
+            )}
+            
             <div className={cn(
-              "w-8 h-8 rounded-full flex items-center justify-center shrink-0",
-              msg.sender === 'user' ? "bg-secondary/20" : "bg-primary/20"
+              "max-w-[75%]",
+              msg.sender === 'user' && "flex flex-col items-end"
             )}>
-              {msg.sender === 'user' ? <User size={16} /> : <Bot size={16} />}
-            </div>
-            <div className={cn(
-              "p-4 rounded-2xl text-sm leading-relaxed",
-              msg.sender === 'user' 
-                ? "bg-secondary text-white rounded-tr-none" 
-                : "glass-card rounded-tl-none"
-            )}>
-              <div className="markdown-body">
-                <ReactMarkdown>{msg.text}</ReactMarkdown>
-              </div>
-              <span className="text-[10px] opacity-50 mt-2 block">
+              <motion.div
+                className={cn(
+                  "px-5 py-3 rounded-2xl text-sm leading-relaxed backdrop-blur-sm",
+                  msg.sender === 'user' 
+                    ? "bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-br-none shadow-lg shadow-blue-600/30" 
+                    : "bg-white/10 text-white/90 rounded-bl-none border border-white/10 hover:bg-white/15 transition-colors"
+                )}>
+                <div className="prose prose-invert prose-sm max-w-none [&_p]:mb-0 [&_ul]:my-1 [&_ol]:my-1 [&_li]:m-0">
+                  <ReactMarkdown>{msg.text}</ReactMarkdown>
+                </div>
+              </motion.div>
+              <span className={cn(
+                "text-[10px] mt-1.5",
+                msg.sender === 'user' ? "text-white/40" : "text-white/30"
+              )}>
                 {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </span>
             </div>
+
+            {msg.sender === 'user' && (
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-violet-600 flex items-center justify-center shrink-0 shadow-lg shadow-violet-600/30">
+                <User size={18} className="text-white" />
+              </div>
+            )}
           </motion.div>
         ))}
+
         {isLoading && (
-          <div className="flex gap-3 mr-auto">
-            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center animate-pulse">
-              <Bot size={16} />
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex gap-3 justify-start"
+          >
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/30 animate-pulse">
+              <Bot size={18} className="text-white" />
             </div>
-            <div className="glass-card p-4 rounded-2xl rounded-tl-none flex gap-1">
-              <div className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce"></div>
-              <div className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce [animation-delay:0.2s]"></div>
-              <div className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce [animation-delay:0.4s]"></div>
+            <div className="bg-white/10 border border-white/10 px-5 py-3 rounded-2xl rounded-bl-none flex gap-2 backdrop-blur-sm shadow-lg shadow-white/5">
+              <motion.div 
+                className="w-2 h-2 bg-blue-400 rounded-full"
+                animate={{ y: [0, -8, 0] }}
+                transition={{ duration: 0.6, repeat: Infinity }}
+              />
+              <motion.div 
+                className="w-2 h-2 bg-blue-400 rounded-full"
+                animate={{ y: [0, -8, 0] }}
+                transition={{ duration: 0.6, repeat: Infinity, delay: 0.1 }}
+              />
+              <motion.div 
+                className="w-2 h-2 bg-blue-400 rounded-full"
+                animate={{ y: [0, -8, 0] }}
+                transition={{ duration: 0.6, repeat: Infinity, delay: 0.2 }}
+              />
             </div>
-          </div>
+          </motion.div>
         )}
       </div>
 
-      {/* Input */}
-      <div className="p-4 pb-8 glass-card border-t border-white/10 shrink-0">
-        <div className="relative flex items-center">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-            placeholder="Type your safety concern..."
-            className="w-full bg-white/5 border border-white/10 rounded-full py-4 pl-6 pr-14 focus:outline-none focus:border-primary/50 transition-colors"
-          />
-          <button
-            onClick={handleSend}
+      {/* Quick Suggestions */}
+      {messages.length === 1 && !isLoading && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="px-4 pb-3 space-y-2"
+        >
+          <p className="text-xs text-white/40 uppercase tracking-wider font-semibold px-1">Quick Options</p>
+          <div className="grid grid-cols-3 gap-2">
+            {QUICK_SUGGESTIONS.map((suggestion, idx) => (
+              <motion.button
+                key={idx}
+                whileHover={{ scale: 1.02, y: -2 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => handleSend(suggestion.text)}
+                className="bg-white/10 hover:bg-white/20 border border-white/10 hover:border-white/20 rounded-lg px-3 py-2 text-xs text-white/80 font-medium transition-all duration-200 flex items-center justify-center gap-1.5 backdrop-blur-sm"
+              >
+                <suggestion.icon size={14} />
+                <span className="hidden sm:inline">{suggestion.text}</span>
+              </motion.button>
+            ))}
+          </div>
+        </motion.div>
+      )}
+
+      {/* Input Area */}
+      <div className="px-4 pb-6 pt-3 backdrop-blur-xl border-t border-white/5">
+        <div className="relative flex items-center gap-2">
+          <div className="flex-1 relative">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
+              placeholder="Type your safety concern..."
+              className="w-full bg-white/10 border border-white/20 hover:border-white/30 focus:border-blue-500/50 rounded-xl py-4 px-5 text-white placeholder-white/40 focus:outline-none transition-all duration-200 focus:bg-white/15 backdrop-blur-sm"
+            />
+            <motion.div
+              className="absolute inset-0 rounded-xl pointer-events-none"
+              animate={input ? { boxShadow: ['0 0 0 0 rgba(59, 130, 246, 0.3)', '0 0 20px 0 rgba(59, 130, 246, 0.1)'] } : {}}
+              transition={{ duration: 0.5 }}
+            />
+          </div>
+          
+          <motion.button
+            onClick={() => handleSend()}
             disabled={!input.trim() || isLoading}
-            className="absolute right-2 p-3 bg-primary rounded-full text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary-dark transition-colors"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className={cn(
+              "p-3 rounded-xl font-semibold transition-all duration-200 shadow-lg",
+              input.trim() && !isLoading
+                ? "bg-gradient-to-br from-blue-500 to-blue-600 text-white hover:shadow-lg hover:shadow-blue-500/50 cursor-pointer"
+                : "bg-white/10 text-white/50 cursor-not-allowed"
+            )}
           >
             <Send size={20} />
-          </button>
+          </motion.button>
         </div>
-        <p className="text-[10px] text-center text-text-muted mt-3 flex items-center justify-center gap-1">
-          <Sparkles size={10} /> Powered by Gemini AI for real-time safety
-        </p>
+        
+        <motion.p 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-[11px] text-center text-white/30 mt-3 flex items-center justify-center gap-1.5 font-medium"
+        >
+          <Sparkles size={11} /> Powered by Gemini AI
+        </motion.p>
       </div>
     </div>
   );
