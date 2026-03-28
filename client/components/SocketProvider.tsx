@@ -3,11 +3,13 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { socket } from '@/lib/socket';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useSOSStore } from '@/store/useSOSStore';
 import { AlertTriangle, MapPin, X, Check, Navigation } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function SocketProvider({ children }: { children: React.ReactNode }) {
   const { user, isAuthenticated } = useAuthStore();
+  const { setLiveHelpers, updateHelperStatus, removeHelper } = useSOSStore();
   const [incomingSOS, setIncomingSOS] = useState<any>(null);
   const [helperLocation, setHelperLocation] = useState<{lat: number, lng: number} | null>(null);
   const [sessionId] = useState(() => Math.random().toString(36).substring(7));
@@ -28,6 +30,7 @@ export default function SocketProvider({ children }: { children: React.ReactNode
     setHelperLocation({ lat: defaultLat, lng: defaultLng });
     socket.emit('updateLocation', {
       userId,
+      name: (user as any)?.name || 'Unknown Helper',
       latitude: defaultLat,
       longitude: defaultLng
     });
@@ -40,6 +43,7 @@ export default function SocketProvider({ children }: { children: React.ReactNode
         
         socket.emit('updateLocation', {
           userId,
+          name: (user as any)?.name || 'Unknown Helper',
           latitude,
           longitude
         });
@@ -54,15 +58,28 @@ export default function SocketProvider({ children }: { children: React.ReactNode
       setIncomingSOS(data);
     });
 
+    // Receive initial detected helpers array immediately after SOS
+    socket.on('detectedHelpers', (helpers) => {
+      setLiveHelpers(helpers.map((h: any) => ({ ...h, status: 'PENDING' })));
+    });
+
     // Listen for helper confirmation
     socket.on('helperAssigned', (data) => {
       toast.success(`Help is on the way! Helper assigned.`);
+      updateHelperStatus(data.helperId, 'RESPONDING');
+    });
+
+    // Listen for explicit helper rejection
+    socket.on('helperRejected', (data) => {
+      removeHelper(data.helperId);
     });
 
     return () => {
       navigator.geolocation.clearWatch(watchId);
       socket.off('receiveSOS');
+      socket.off('detectedHelpers');
       socket.off('helperAssigned');
+      socket.off('helperRejected');
       socket.disconnect();
     };
   }, [isAuthenticated, user]);
@@ -84,6 +101,10 @@ export default function SocketProvider({ children }: { children: React.ReactNode
   };
 
   const handleReject = () => {
+    if (incomingSOS && user) {
+      const userId = (user as any)._id || (user as any).email || sessionId;
+      socket.emit('rejectSOS', { helperId: userId, victimId: incomingSOS.victimId });
+    }
     setIncomingSOS(null);
   };
 

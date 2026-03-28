@@ -10,8 +10,19 @@ export interface SOS {
 
 import { triggerSOS, getFirstSOS } from '@/api/sos';
 
+export interface Helper {
+  userId: string;
+  name: string;
+  distance: string | number;
+  status: 'PENDING' | 'RESPONDING';
+}
+
 interface SOSState {
   sos: SOS | null;
+  liveHelpers: Helper[];
+  setLiveHelpers: (helpers: Helper[]) => void;
+  updateHelperStatus: (userId: string, status: 'PENDING' | 'RESPONDING') => void;
+  removeHelper: (userId: string) => void;
 //   sosList: SOS[]; // Represents all SOSes fetched for the user
   setSOS: (sos: SOS | null) => void;
   clearSOS: () => void;
@@ -24,6 +35,14 @@ interface SOSState {
 
 export const useSOSStore = create<SOSState>((set) => ({
   sos: null,
+  liveHelpers: [],
+  setLiveHelpers: (helpers) => set({ liveHelpers: helpers }),
+  updateHelperStatus: (userId, status) => set((state) => ({
+    liveHelpers: state.liveHelpers.map(h => h.userId === userId ? { ...h, status } : h)
+  })),
+  removeHelper: (userId) => set((state) => ({
+    liveHelpers: state.liveHelpers.filter(h => h.userId !== userId)
+  })),
 //   sosList: [],
   setSOS: (sos) => set({ sos }),
   clearSOS: () => set({ sos: null }),

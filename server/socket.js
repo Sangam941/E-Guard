@@ -18,9 +18,9 @@ export const initSocket = (server) => {
 
     // 1. REAL-TIME LOCATION STREAM
     socket.on('updateLocation', (data) => {
-      const { userId, latitude, longitude } = data;
+      const { userId, name, latitude, longitude } = data;
       if (userId && latitude && longitude) {
-        activeUsers.set(socket.id, { userId, latitude, longitude });
+        activeUsers.set(socket.id, { userId, name: name || 'Unknown', latitude, longitude });
       }
     });
 
@@ -29,6 +29,8 @@ export const initSocket = (server) => {
       const { userId, latitude, longitude } = data;
       console.log(`SOS Triggered by User ${userId} at [${latitude}, ${longitude}]`);
       
+      const helpersNearby = [];
+
       // 3. BACKEND SOCKET LOGIC - Loop through connected users and find those < 5km
       activeUsers.forEach((userLoc, socketId) => {
         // Skip the exact tab/device that pressed the button
@@ -46,8 +48,11 @@ export const initSocket = (server) => {
             longitude,
             distance: distance.toFixed(2)
           });
+          helpersNearby.push({ userId: userLoc.userId, name: userLoc.name, distance: distance.toFixed(2) });
         }
       });
+
+      socket.emit('detectedHelpers', helpersNearby);
     });
 
     // 5. ACCEPT / REJECT FLOW
@@ -59,6 +64,17 @@ export const initSocket = (server) => {
       activeUsers.forEach((userLoc, socketId) => {
         if (userLoc.userId === victimId) {
           io.to(socketId).emit('helperAssigned', { helperId, helperLat, helperLng });
+        }
+      });
+    });
+
+    socket.on('rejectSOS', (data) => {
+      const { helperId, victimId } = data;
+      console.log(`User ${helperId} rejected SOS from ${victimId}`);
+      
+      activeUsers.forEach((userLoc, socketId) => {
+        if (userLoc.userId === victimId) {
+          io.to(socketId).emit('helperRejected', { helperId });
         }
       });
     });

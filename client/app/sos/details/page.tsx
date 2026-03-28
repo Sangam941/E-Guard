@@ -10,7 +10,7 @@ import { useSOSStore } from '@/store/useSOSStore';
 const MapView = dynamic(() => import('@/components/MapView'), { ssr: false });
 
 export default function SOSDetailsPage() {
-  const { sos, fetchFirstSOS } = useSOSStore()
+  const { sos, fetchFirstSOS, liveHelpers } = useSOSStore()
   const router = useRouter();
   const { isSOSActive, deactivateSOS } = useStore(); 
   // const [location, setLocation] = useState({ lat: 40.7128, lng: -74.0060 });
@@ -93,32 +93,29 @@ export default function SOSDetailsPage() {
               {/* Notified Contacts */}
               <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
                 <h3 className="text-sm font-bold tracking-widest mb-6">
-                  NOTIFIED CONTACTS <span className="text-green-400">3 ACTIVE</span>
+                  DETECTED RESPONDERS <span className="text-green-400">{liveHelpers.length} NEARBY</span>
                 </h3>
                 <div className="space-y-4">
-                  <div className="flex items-center gap-3 pb-4 border-b border-gray-800">
-                    <div className="w-10 h-10 bg-gray-800 rounded flex items-center justify-center text-lg">👤</div>
-                    <div className="flex-1">
-                      <p className="text-xs font-bold">MARCUS V.</p>
-                      <p className="text-xs text-gray-500">EMERGENCY CONTACT</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs text-green-400 font-bold">RECEIVED</p>
-                      <p className="text-xs text-gray-500">12:14</p>
-                    </div>
-                  </div>
+                  {liveHelpers.length > 0 ? (
+                    liveHelpers.map((helper) => (
+                      <div key={helper.userId} className="flex items-center gap-3 pb-4 border-b border-gray-800">
+                        <div className="w-10 h-10 bg-gray-800 rounded flex items-center justify-center text-lg">👤</div>
+                        <div className="flex-1">
+                          <p className="text-xs font-bold uppercase">{helper.name}</p>
+                          <p className="text-xs text-gray-500">{helper.distance}km AWAY</p>
+                        </div>
+                        <div className="text-right">
+                          <p className={`text-xs font-bold ${helper.status === 'RESPONDING' ? 'text-green-400' : 'text-yellow-400'}`}>
+                            {helper.status}
+                          </p>
+                          <p className="text-xs text-gray-500">LIVE</p>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-xs text-gray-500 mb-4">SCANNING 5KM RADIUS OVER PING...</p>
+                  )}
 
-                  <div className="flex items-center gap-3 pb-4 border-b border-gray-800">
-                    <div className="w-10 h-10 bg-gray-800 rounded flex items-center justify-center text-lg">👤</div>
-                    <div className="flex-1">
-                      <p className="text-xs font-bold">ELENA B.</p>
-                      <p className="text-xs text-gray-500">EMERGENCY CONTACT</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs text-blue-400 font-bold">DELIVERING</p>
-                      <p className="text-xs text-gray-500">12:15</p>
-                    </div>
-                  </div>
 
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-gray-800 rounded flex items-center justify-center text-lg">🎯</div>
@@ -128,7 +125,7 @@ export default function SOSDetailsPage() {
                     </div>
                     <div className="text-right">
                       <p className="text-xs text-yellow-400 font-bold">DISPATCHED</p>
-                      <p className="text-xs text-gray-500">12:14</p>
+                      <p className="text-xs text-gray-500">AUTO</p>
                     </div>
                   </div>
                 </div>
