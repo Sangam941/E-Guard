@@ -21,7 +21,7 @@ export const createFakeCall = asyncHandler(async (req, res) => {
     userId, callerName, callerNumber,
     status: 'pending',
   });
-  res.status(201).json({ success: true, data: fakeCall });
+  res.status(201).json({ success: true, data: fakeCall }); 
 });
 
 // PATCH /api/fake-call/:id/stop
