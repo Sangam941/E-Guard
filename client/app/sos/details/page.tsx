@@ -1,9 +1,7 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { MapPin } from 'lucide-react';
-import { useStore } from '@/store/useStore';
 import dynamic from 'next/dynamic';
 import { useSOSStore } from '@/store/useSOSStore';
 
@@ -12,7 +10,6 @@ const MapView = dynamic(() => import('@/components/MapView'), { ssr: false });
 export default function SOSDetailsPage() {
   const { sos, fetchFirstSOS, liveHelpers } = useSOSStore()
   const router = useRouter();
-  const { isSOSActive, deactivateSOS } = useStore(); 
   // const [location, setLocation] = useState({ lat: 40.7128, lng: -74.0060 });
 
   // useEffect(() => {

@@ -10,23 +10,6 @@ export default function Dashboard() {
   const [contacts, setContacts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const sosData = await apiService.sos.getStatus();
-        setSosStatus(sosData);
-
-        const contactsData = await apiService.contacts.getAll();
-        setContacts(contactsData.slice(0, 3));
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      } finally {
-        setLoading(false);
-      } 
-    };
-
-    fetchData();
-  }, []);
 
   return (
     <div className="min-h-screen bg-gray-950 text-white p-4 sm:p-8 md:p-12">

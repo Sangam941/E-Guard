@@ -3,8 +3,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Shield } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useStore } from '@/store/useStore';
-import { triggerSOS as apiTriggerSOS } from '@/api/sos';
 import { useSOSStore } from '@/store/useSOSStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { socket } from '@/lib/socket';
@@ -13,7 +11,6 @@ export default function SOSPage() {
   const { createSOS } = useSOSStore()
   const { user } = useAuthStore()
   const router = useRouter();
-  const { activateSOS } = useStore();
   const [sosTriggered, setSOSTriggered] = useState(false);
   const [progress, setProgress] = useState(0);
   const [isHolding, setIsHolding] = useState(false);
@@ -91,7 +88,7 @@ export default function SOSPage() {
       
       router.push('/sos/details');
     }
-  }, [sosTriggered, activateSOS, router, location, user]);
+  }, [sosTriggered, router, location, user]);
 
   return (
     <div className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-center p-4 sm:p-6 md:p-8">
