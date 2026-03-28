@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Shield, Zap, Mic, Phone, Lock, Settings, LogOut, Menu, X } from 'lucide-react';
+import { Shield, Zap, Mic, Phone, Lock, Settings, LogOut, Menu, X, ImageIcon } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { useAuthStore } from '@/store/useAuthStore';
 
@@ -19,11 +19,12 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
   const router = useRouter();
 
   const navItems = [
-    { icon: Zap, label: 'Dashboard', href: '/' },
-    { icon: Shield, label: 'SOS', href: '/sos', danger: true },
-    { icon: Mic, label: 'Chat', href: '/assistant' },
-    { icon: Phone, label: 'Fake Call', href: '/fake-call' },
-    { icon: Lock, label: 'Contacts', href: '/contacts' },
+    { icon: Zap, label: 'Dashboard', href: '/', color: 'green' },
+    { icon: Shield, label: 'SOS', href: '/sos', color: 'red', danger: true },
+    { icon: Mic, label: 'Chat', href: '/assistant', color: 'green' },
+    { icon: Phone, label: 'Fake Call', href: '/fake-call', color: 'green' },
+    { icon: Lock, label: 'Contacts', href: '/contacts', color: 'green' },
+    { icon: ImageIcon, label: 'Evidence', href: '/evidence', color: 'green' },
   ];
 
   return (
