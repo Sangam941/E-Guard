@@ -12,14 +12,14 @@ const MapView = dynamic(() => import('@/components/MapView'), { ssr: false });
 export default function SOSDetailsPage() {
   const { sos, fetchFirstSOS } = useSOSStore()
   const router = useRouter();
-  const { isSOSActive, deactivateSOS } = useStore();
+  const { isSOSActive, deactivateSOS } = useStore(); 
   // const [location, setLocation] = useState({ lat: 40.7128, lng: -74.0060 });
 
   // useEffect(() => {
   //   if (navigator.geolocation) {
   //     navigator.geolocation.getCurrentPosition((position) => {
   //       setLocation({
-  //         lat: position.coords.latitude,
+  //         lat: position.coords.latitude, 
   //         lng: position.coords.longitude,
   //       });
   //     });
