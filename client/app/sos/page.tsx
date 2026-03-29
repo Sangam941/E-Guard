@@ -18,7 +18,7 @@ export default function SOSPage() {
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
 
-  const [location, setLocation] = useState({ lat: 40.7128, lng: -74.0060 });
+  const [location, setLocation] = useState({ lat: 27.7120, lng: 85.3449 });
 
   useEffect(() => {
     if (navigator.geolocation) {
